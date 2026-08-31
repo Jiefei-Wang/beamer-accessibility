@@ -1,0 +1,11 @@
+/build/
+*.aux
+*.log
+*.nav
+*.out
+*.pdf
+*.snm
+*.toc
+*.vrb
+__pycache__/
+

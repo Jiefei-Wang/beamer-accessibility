@@ -1,0 +1,145 @@
+\NeedsTeXFormat{LaTeX2e}[2025-06-01]
+\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.3 Low-level semantic tagging for Beamer]
+
+% PDF management must have been selected before the class. The companion
+% wrapper does this, or a package-only user can place
+% \RequirePackage{pdfmanagement} before \documentclass{beamer}.
+\RequirePackage{tagpdf}
+
+\ExplSyntaxOn
+\tagpdfsetup
+  {
+    activate-all,
+    role/new-tag = frame/Sect,
+    role/new-tag = frametitle/H1,
+    role/new-tag = block/Div,
+    role/new-tag = blocktitle/H2
+  }
+
+% The package wraps Beamer's existing visual implementation. It emits only
+% structure and marked-content objects; Beamer remains responsible for layout.
+\bool_new:N \g__ba_frame_active_bool
+\bool_new:N \g__ba_para_open_bool
+\bool_new:N \g__ba_in_title_bool
+\bool_new:N \g__ba_frame_unsupported_bool
+\int_new:N  \g__ba_para_suppress_int
+
+\cs_new_protected:Npn \ba_frame_begin:
+  {
+    \bool_if:NF \g__ba_frame_active_bool
+      {
+        \tag_struct_begin:n { tag=frame }
+        \bool_gset_true:N \g__ba_frame_active_bool
+        \bool_gset_false:N \g__ba_frame_unsupported_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_frame_end:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_frame_active_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_paragraph_begin:
+  {
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_if:NF \g__ba_in_title_bool
+          {
+            \bool_if:NF \g__ba_frame_unsupported_bool
+              {
+                \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
+                  {
+                    \bool_if:NF \g__ba_para_open_bool
+                      {
+                        \tag_struct_begin:n { tag=P }
+                        \tag_mc_begin:n { }
+                        \bool_gset_true:N \g__ba_para_open_bool
+                      }
+                  }
+              }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_paragraph_end:
+  {
+    \bool_if:NT \g__ba_para_open_bool
+      {
+        \tag_mc_end:
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_para_open_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_frametitle_begin:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_gset_true:N \g__ba_in_title_bool
+        \tag_struct_begin:n { tag=frametitle,firstkid=true }
+        \tag_mc_begin:n { }
+      }
+  }
+
+\cs_new_protected:Npn \ba_frametitle_end:
+  {
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \tag_mc_end:
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_in_title_bool
+      }
+  }
+
+% Retained as a low-level experimental API. The automatic hooks are idempotent
+% with these commands, which keeps the validated manual prototypes usable.
+\NewDocumentCommand \BeamerAccessibilityFrameBegin { } { \ba_frame_begin: }
+\NewDocumentCommand \BeamerAccessibilityFrameEnd { } { \ba_frame_end: }
+\NewDocumentCommand \BeamerAccessibilityParagraphBegin { } { \ba_paragraph_begin: }
+\NewDocumentCommand \BeamerAccessibilityParagraphEnd { } { \ba_paragraph_end: }
+
+\cs_new_protected:Npn \ba_suppress_begin:
+  {
+    \ba_paragraph_end:
+    \bool_gset_true:N \g__ba_frame_unsupported_bool
+    \int_gincr:N \g__ba_para_suppress_int
+  }
+
+\cs_new_protected:Npn \ba_suppress_end:
+  {
+    \int_compare:nNnT { \g__ba_para_suppress_int } > { 0 }
+      { \int_gdecr:N \g__ba_para_suppress_int }
+  }
+\ExplSyntaxOff
+
+% Ordinary prose is tagged only while a rendered Beamer slide is active.
+\AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
+\AddToHook{para/end}{\csname ba_paragraph_end:\endcsname}
+
+% Lists are deliberately unsupported in v0.3. Once encountered, paragraph
+% tagging remains suppressed for the rest of that frame. The list still uses
+% Beamer's original implementation and receives no misleading partial tags.
+\AddToHook{env/itemize/begin}{\csname ba_suppress_begin:\endcsname}
+\AddToHook{env/itemize/end}{\csname ba_suppress_end:\endcsname}
+\AddToHook{env/enumerate/begin}{\csname ba_suppress_begin:\endcsname}
+\AddToHook{env/enumerate/end}{\csname ba_suppress_end:\endcsname}
+\AddToHook{env/description/begin}{\csname ba_suppress_begin:\endcsname}
+\AddToHook{env/description/end}{\csname ba_suppress_end:\endcsname}
+
+% beamer@frameslide surrounds one rendered slide. The /after hook closes the
+% structure only after Beamer has constructed the title and output boxes.
+\AddToHook{env/beamer@frameslide/begin}{\csname ba_frame_begin:\endcsname}
+\AddToHook{env/beamer@frameslide/after}{\csname ba_frame_end:\endcsname}
+
+% Beamer builds the title box after the body. firstkid keeps the title first in
+% semantic order without moving its visual box.
+\addtobeamertemplate{frametitle}
+  {\csname ba_frametitle_begin:\endcsname}
+  {\csname ba_frametitle_end:\endcsname}
+
