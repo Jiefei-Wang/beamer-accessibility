@@ -1,5 +1,28 @@
 # beamer-accessibility
+Solves accessibility requirement for beamer slides. After installation, replacing
 
+```
+\documentclass[14pt,t]{beamer}
+```
+
+with
+
+```
+\documentclass[14pt,t]{beamer-accessibility}
+```
+
+You are all done. This is a vibe-coding product. The author knows nothing about this package. It just works! 
+
+## Installation
+To install the package, you need to have MikTex, run the following command in your powershell.
+```
+git clone https://github.com/Jiefei-Wang/beamer-accessibility.git
+cd beamer-accessibility
+
+.\scripts\install-miktex.ps1
+```
+
+# Shitty details for AI to read 
 Experimental low-level accessibility support for Beamer that preserves Beamer's visual implementation and ordinary frame syntax.
 
 The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks), multi-column slide layouts (`columns`, `column` environments, and `\column` command), graphics with author-provided alternative text (`\includegraphics[alt={...}]{...}` and `figure` environments), inline/display math formulas, fragile code listings (`listings`), and reference footnotes. It also injects essential PDF document catalog metadata (`/Lang` and `/ViewerPreferences` with `/DisplayDocTitle true`) with configurable document language. It has been verified compatible with diverse standard Beamer themes (`Boadilla`, `Madrid`, `Warsaw`, `Berlin`, `Montpellier`, `Hannover`, `CambridgeUS`, `Pittsburgh`, `Rochester`). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
