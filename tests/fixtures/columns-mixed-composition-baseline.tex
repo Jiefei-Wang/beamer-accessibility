@@ -1,0 +1,41 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usepackage{graphicx}
+\usetheme{Boadilla}
+\makeatletter
+\define@key{Gin}{alt}{}
+\define@key{Gin}{alttext}{}
+\makeatother
+
+\begin{document}
+\begin{frame}{Complex Composition Slide}
+Introductory remarks spanning full slide width.
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{block}{Left: Method Summary}
+Overview of methodological steps:
+\begin{enumerate}
+\item Data acquisition
+\item Quality inspection
+  \begin{itemize}
+  \item Check missingness
+  \item Check outliers
+  \end{itemize}
+\item Model fitting
+\end{enumerate}
+\end{block}
+\end{column}
+
+\begin{column}{0.48\textwidth}
+\begin{alertblock}{Right: Empirical Results}
+Summary of fitted model parameters:
+
+\includegraphics[alt={Diagnostic plot showing model residuals},width=\linewidth]{example-image-b}
+\end{alertblock}
+\end{column}
+\end{columns}
+
+Concluding remarks spanning full width after columns.
+\end{frame}
+\end{document}

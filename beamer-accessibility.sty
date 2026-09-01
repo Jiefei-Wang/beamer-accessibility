@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/09/01 v0.7 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/09/01 v0.8 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -13,7 +13,8 @@
     role/new-tag = frame/Sect,
     role/new-tag = frametitle/H1,
     role/new-tag = block/Div,
-    role/new-tag = blocktitle/H2
+    role/new-tag = blocktitle/H2,
+    role/new-tag = column/Div
   }
 
 % The package wraps Beamer's existing visual implementation. It emits only
@@ -47,6 +48,9 @@
 \bool_new:N \g__ba_block_open_bool
 \bool_new:N \g__ba_in_block_title_bool
 \bool_new:N \g__ba_block_title_open_bool
+
+% Column structure state:
+\bool_new:N \g__ba_column_open_bool
 
 % Graphics structure state:
 \bool_new:N \g__ba_graphics_struct_bool
@@ -240,6 +244,46 @@
     \int_gzero:N \g__ba_list_depth_int
   }
 
+\cs_new_protected:Npn \ba_column_begin:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_column_open_bool
+      {
+        \ba_column_end:
+      }
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_if:NF \g__ba_frame_unsupported_bool
+          {
+            \tag_struct_begin:n { tag = column }
+            \bool_gset_true:N \g__ba_column_open_bool
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_column_end:
+  {
+    \ba_paragraph_end:
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
+      {
+        \ba_list_close_all:
+      }
+    \bool_if:NT \g__ba_block_open_bool
+      {
+        \ba_block_end:
+      }
+    \bool_if:NT \g__ba_column_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_column_open_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_columns_end:
+  {
+    \ba_column_end:
+  }
+
 \cs_new_protected:Npn \ba_frame_begin:
   {
     \bool_if:NF \g__ba_frame_active_bool
@@ -260,6 +304,7 @@
         \bool_gset_false:N \g__ba_block_open_bool
         \bool_gset_false:N \g__ba_in_block_title_bool
         \bool_gset_false:N \g__ba_block_title_open_bool
+        \bool_gset_false:N \g__ba_column_open_bool
         \bool_gset_false:N \g__ba_graphics_struct_bool
         \tl_gclear:N \g__ba_graphics_alt_tl
       }
@@ -269,6 +314,7 @@
   {
     \ba_body_end:
     \ba_list_close_all:
+    \ba_column_end:
     \bool_if:NT \g__ba_block_open_bool
       {
         \tag_struct_end:
@@ -472,6 +518,34 @@
   \csname ba_graphics_end:\endcsname
   \endgroup
 }
+
+% Multi-column slide layout support:
+\renewcommand<>\beamer@columncom[2][\beamer@colmode]{%
+  \beamer@colclose%
+  \def\beamer@colclose{\csname ba_column_end:\endcsname\end{minipage}\hfill\end{actionenv}\ignorespaces}%
+  \begin{actionenv}#3%
+    \setkeys{beamer@col}{#1}%
+    \ifbeamer@colheight
+      \begin{minipage}[\beamer@colalign][\beamer@colheight]{#2}%
+    \else
+      \begin{minipage}[\beamer@colalign]{#2}%
+    \fi
+      \csname ba_column_begin:\endcsname
+      \leavevmode\raggedright\beamer@colheadskip\ignorespaces}
+
+\renewenvironment<>{beamer@columnenv}[2][\beamer@colmode]{%
+  \beamer@colclose\def\beamer@colclose{}%
+  \begin{actionenv}#3%
+    \setkeys{beamer@col}{#1}%
+    \ifbeamer@colheight
+      \begin{minipage}[\beamer@colalign][\beamer@colheight]{#2}%
+    \else
+      \begin{minipage}[\beamer@colalign]{#2}%
+    \fi
+      \csname ba_column_begin:\endcsname
+      \leavevmode\raggedright\beamer@colheadskip\ignorespaces}
+    {\csname ba_column_end:\endcsname\end{minipage}\hfill\end{actionenv}\@ignoretrue}
+\let\endcolumn\endbeamer@columnenv
 
 \let\ba@orig@beamer@checkframetitle\beamer@checkframetitle
 \def\beamer@checkframetitle{\@ifnextchar\bgroup\ba@inlineframetitle{\csname ba_body_begin:\endcsname}}

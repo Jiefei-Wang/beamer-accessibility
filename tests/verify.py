@@ -162,6 +162,14 @@ def check_figure_structure(frame_node: dict, expected_fig_count: int, expected_a
                     raise AssertionError(f"Figure {i} expected Alt={exp_alt!r}, got {act_alt!r}")
 
 
+def check_column_structure(frame_node: dict, expected_col_count: int) -> None:
+    """Verifies that /column structure elements are present in the frame structure."""
+    frame_kids = [object_value(k) for k in children(frame_node)]
+    cols = [k for k in frame_kids if get_struct_tag(k) == "/column"]
+    if len(cols) != expected_col_count:
+        raise AssertionError(f"Expected {expected_col_count} columns in frame, got {len(cols)}")
+
+
 def render(pdf_path: Path, destination: Path) -> list[Path]:
     if destination.exists():
         shutil.rmtree(destination)
@@ -410,6 +418,49 @@ def main() -> None:
             frame_children=["/frametitle", "/P", "/P", "/P"],
             baseline="figure-environment-baseline",
             tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["Distribution of participants by study cohort"]),
+        ),
+        # Multi-column slide layout & theme fixtures (v0.8)
+        FixtureSpec(
+            name="basic-columns-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 6, "/column": 2}),
+            frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
+            baseline="basic-columns-baseline",
+            tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
+        ),
+        FixtureSpec(
+            name="column-command-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 6, "/column": 2}),
+            frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
+            baseline="column-command-baseline",
+            tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
+        ),
+        FixtureSpec(
+            name="columns-with-lists-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 8, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/column": 2}),
+            frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
+            baseline="columns-with-lists-baseline",
+            tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
+        ),
+        FixtureSpec(
+            name="columns-mixed-composition-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 2, "/blocktitle": 2, "/column": 2, "/L": 2, "/LI": 5, "/Lbl": 5, "/LBody": 5, "/P": 12, "/Figure": 1}),
+            frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
+            baseline="columns-mixed-composition-baseline",
+            tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
+        ),
+        FixtureSpec(
+            name="theme-madrid-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 5}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="theme-madrid-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="theme-warsaw-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 5}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="theme-warsaw-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
         # Unsupported fallback fixtures
         FixtureSpec(

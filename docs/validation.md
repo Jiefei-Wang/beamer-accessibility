@@ -9,7 +9,7 @@ Validated on 2026-09-01 with:
 - PDF management 0.97c
 - Poppler rendering at 300 DPI in RGB
 
-## Isolated tests (30 Fixture Suites)
+## Isolated tests (36 Fixture Suites)
 
 - `frame-paragraph`: Frame, title, and body paragraph tagging: PASS (0 differing pixels)
 - `package-only`: Standalone package loading after `\documentclass{beamer}`: PASS (0 differing pixels)
@@ -39,10 +39,30 @@ Validated on 2026-09-01 with:
 - `inline-image`: Inline graphic inside paragraph text: PASS (0 differing pixels)
 - `block-with-image`: Graphic with alternative text inside a Beamer `block`: PASS (0 differing pixels)
 - `figure-environment`: `\begin{figure}` with `\caption`: PASS (0 differing pixels)
+- `basic-columns`: 2-column layout via `column` environment: PASS (0 differing pixels)
+- `column-command`: 2-column layout via `\column` command: PASS (0 differing pixels)
+- `columns-with-lists`: 2-column layout with `itemize` and `enumerate` lists: PASS (0 differing pixels)
+- `columns-mixed-composition`: Multi-column slide with blocks, nested lists, and figures with alt text: PASS (0 differing pixels)
+- `theme-madrid`: Full slide presentation under Madrid theme: PASS (0 differing pixels)
+- `theme-warsaw`: Full slide presentation under Warsaw theme: PASS (0 differing pixels)
 - `unsupported-list`: Unsupported description fallback: PASS (0 differing pixels)
 - `unsupported-overlay-list`: Multi-slide overlay list fallback: PASS (0 differing pixels)
 
 Run these checks with `tests/run-tests.ps1` or `python tests/verify.py build/tests`.
+
+## Theme Compatibility Matrix
+
+Verified across 10 diverse presentation themes with zero pixel differences at 300 DPI:
+- `default`: PASS (0 diff px, 100% text match)
+- `Boadilla`: PASS (0 diff px, 100% text match)
+- `Madrid`: PASS (0 diff px, 100% text match)
+- `Warsaw`: PASS (0 diff px, 100% text match)
+- `Berlin`: PASS (0 diff px, 100% text match)
+- `Montpellier`: PASS (0 diff px, 100% text match)
+- `Hannover`: PASS (0 diff px, 100% text match)
+- `CambridgeUS`: PASS (0 diff px, 100% text match)
+- `Pittsburgh`: PASS (0 diff px, 100% text match)
+- `Rochester`: PASS (0 diff px, 100% text match)
 
 ## Integration deck
 
@@ -50,7 +70,7 @@ The package was installed in the MiKTeX user tree and loaded from there by the 2
 
 - `pdfinfo`: `Tagged: yes`
 - Pages: 23
-- Structure counts: 23 `frame`, 22 `frametitle`, 2 `Figure`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (457 total structure objects)
+- Structure counts: 23 `frame`, 22 `frametitle`, 12 `column`, 2 `Figure`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (485 total structure objects)
 - Text match: 100% exact text match across all 23 pages
 - Visual comparison: **0 differing pixels across all 23 pages at 300 DPI (23/23 exact match)**
 

@@ -1,0 +1,27 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usepackage{graphicx}
+\usetheme{Boadilla}
+
+\begin{document}
+\begin{frame}{Columns With Lists}
+Introductory remarks before dual lists.
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+\item Left itemize 1
+\item Left itemize 2
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{enumerate}
+\item Right enumerate 1
+\item Right enumerate 2
+\end{enumerate}
+\end{column}
+\end{columns}
+
+Concluding remarks after dual lists.
+\end{frame}
+\end{document}

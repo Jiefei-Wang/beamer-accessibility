@@ -2,7 +2,7 @@
 
 Experimental low-level accessibility support for Beamer that preserves Beamer's visual implementation and ordinary frame syntax.
 
-The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks), and graphics with author-provided alternative text (`\includegraphics[alt={...}]{...}` and `figure` environments). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
+The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks), multi-column slide layouts (`columns`, `column` environments, and `\column` command), and graphics with author-provided alternative text (`\includegraphics[alt={...}]{...}` and `figure` environments). It has been verified compatible with diverse standard Beamer themes (`Boadilla`, `Madrid`, `Warsaw`, `Berlin`, `Montpellier`, `Hannover`, `CambridgeUS`, `Pittsburgh`, `Rochester`). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
 
 ## Requirements
 
@@ -20,31 +20,34 @@ The wrapper class initializes PDF management early and then loads upstream Beame
 ```latex
 \documentclass[14pt,t]{beamer-accessibility}
 \usepackage{graphicx}
-\usetheme{Boadilla}
+\usetheme{Madrid}
 
 \begin{document}
-\begin{frame}{Block and Graphics Overview}
-Introductory paragraph before the block.
+\begin{frame}{Multi-Column and Block Overview}
+Introductory paragraph spanning the slide width.
 
-\begin{block}{Important Milestone}
-Paragraph inside the block.
-
-\includegraphics[alt={Chart showing data distribution across cohorts},width=4cm]{example-image}
-
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{block}{Methodology}
 \begin{enumerate}
-\item First numbered milestone with \textbf{bold} text.
+\item Data collection
   \begin{itemize}
-  \item Nested bullet subitem.
+  \item Survey cohort
+  \item Registry cohort
   \end{itemize}
-\item Second numbered milestone.
+\item Model specification
 \end{enumerate}
 \end{block}
+\end{column}
 
-\begin{alertblock}{Warning}
-Alert block text.
+\begin{column}{0.48\textwidth}
+\begin{alertblock}{Diagnostics}
+\includegraphics[alt={Diagnostic plot of model residuals},width=\linewidth]{residual-plot.png}
 \end{alertblock}
+\end{column}
+\end{columns}
 
-Summary paragraph after blocks.
+Summary paragraph after columns.
 \end{frame}
 \end{document}
 ```
@@ -71,48 +74,54 @@ Document
   frame (role-mapped to Sect)
     frametitle (role-mapped to H1)
     P
-    block (role-mapped to Div)
-      blocktitle (role-mapped to H2)
-      P
-        Figure [Alt: "Description of image"]
-      L
-        LI
-          Lbl
-          LBody
-            P
-            L (nested sublist)
-              LI
-                Lbl
-                LBody
-                  P
+    column (role-mapped to Div)
+      block (role-mapped to Div)
+        blocktitle (role-mapped to H2)
+        P
+        L
+          LI
+            Lbl
+            LBody
+              P
+              L (nested sublist)
+                LI
+                  Lbl
+                  LBody
+                    P
+    column (role-mapped to Div)
+      block (role-mapped to Div)
+        blocktitle (role-mapped to H2)
+        P
+          Figure [Alt: "Description of image"]
     P
 ```
 
 - **Frame Titles:** The title is placed before body paragraphs in semantic order (`firstkid=true`) even though Beamer constructs its title box after processing the frame body.
-- **Graphics & Alternative Text (`Figure`):** Intercepts `\includegraphics` to emit `/Figure` structure elements containing leaf marked content and `/Alt` attributes when provided via `alt` or `alttext` keys. Supports standalone graphics, inline graphics in prose, and graphics inside `block` and `figure` environments.
+- **Columns & Multi-Column Layouts (`column`):** Intercepts both environment (`\begin{column}...\end{column}`) and command (`\column{...}`) invocations inside `columns` to emit semantic `/column` structure elements role-mapped to `Div`. Paragraphs, blocks, lists, and figures inside columns nest naturally in their respective column containers.
+- **Graphics & Alternative Text (`Figure`):** Intercepts `\includegraphics` to emit `/Figure` structure elements containing leaf marked content and `/Alt` attributes when provided via `alt` or `alttext` keys. Supports standalone graphics, inline graphics in prose, and graphics inside `block`, `column`, and `figure` environments.
 - **Blocks (`block`, `alertblock`, `exampleblock`):** Emits compliant `block -> (blocktitle, P ..., L ...)` structure mapped to `Div` and `H2`. Untitled blocks omit `blocktitle` cleanly.
 - **Lists (`itemize` & `enumerate`):** Emits compliant `L -> LI -> (Lbl, LBody -> (P, L ...))` hierarchies for single-level and nested lists up to 3 levels deep (`itemize item/subitem/subsubitem`, `enumerate item/subitem/subsubitem`, and arbitrary mixed nestings).
-- **Transitions:** Seamless paragraph open/close boundaries before, after, and within blocks, graphics, and list items.
+- **Theme Compatibility:** Validated across standard inner and outer presentation themes (`Boadilla`, `Madrid`, `Warsaw`, `Berlin`, `Montpellier`, `Hannover`, `CambridgeUS`, `Pittsburgh`, `Rochester`), ensuring slide furniture (navigation bars, head/footlines, sidebars) does not pollute semantic reading trees.
+- **Transitions:** Seamless paragraph open/close boundaries before, after, and within columns, blocks, graphics, and list items.
 - **Visual & Text Identity:** Tagged output is guaranteed to have **0 differing pixels at 300 DPI** against untagged baseline and identical extracted text.
 
 ## Unsupported constructs & graceful fallback
 
-In v0.7:
-- Items with explicit overlay specifications (`\item<1->`, `\item<2->`) fall back cleanly to untagged presentation.
-- `description` environments fall back cleanly to untagged presentation.
-- Tables, multi-column layouts, math tagging, and notes are scheduled for subsequent milestones.
+In v0.8:
 
-This project does not yet claim PDF/UA conformance.
+- **List Overlays:** Item overlays (e.g. `\item<2->` or `\begin{itemize}[<+->]`) are automatically detected and fall back cleanly without emitting partial list tags for inactive frames.
+- **Description lists:** `description` environments fall back cleanly.
+- **Tables & Mathematics:** Native table (`\begin{tabular}`) and display math tagging are scheduled for subsequent milestones.
 
-## Testing
+## Testing & Validation
 
-From PowerShell:
+The test suite runs with:
 
 ```powershell
 ./tests/run-tests.ps1
 ```
 
-The test suite compiles isolated tagged and untagged fixtures with pdfLaTeX, checks the structure tree with `pypdf`, validates unique `(MCID, Pg)` tuples, and compares Poppler renderings at 300 DPI with Pillow. Tagged output must be pixel-identical (0 differing pixels) to its baseline.
+This compiles both baseline and tagged PDFs for 36 isolated fixtures, verifies strict structure trees via `pypdf`, ensures extracted text matches character-for-character, and asserts **0 differing pixels at 300 DPI** via `pdftoppm` rendering. Tagged output must be pixel-identical (0 differing pixels) to its baseline.
 
 ## Installation
 

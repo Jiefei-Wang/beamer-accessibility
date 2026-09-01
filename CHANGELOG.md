@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8 — 2026-09-01
+
+- Add automatic semantic tagging for multi-column slide layouts (`columns`, `column` environments, and `\column` command).
+- Tag columns with `role/new-tag = column/Div`.
+- Wrap Beamer's `\beamer@columncom` and `beamer@columnenv` with `\renewenvironment<>` and `\renewcommand<>`, preserving overlay options `<#3>` and optional mode `[#1]` while placing `\ba_column_begin:` and `\ba_column_end:` inside the `minipage` lifecycle.
+- Update `\endcolumn` to alias `\endbeamer@columnenv` for clean environment-form column termination.
+- Validate compatibility across 10 diverse presentation themes (`Boadilla`, `Madrid`, `Warsaw`, `Berlin`, `Montpellier`, `Hannover`, `CambridgeUS`, `Pittsburgh`, `Rochester`, `default`), confirming 0 differing pixels and identical text extraction.
+- Expand test harness to 36 isolated fixture suites verifying `/column` structure elements, mixed composition (columns + blocks + nested lists + figures with alt text), unique `(MCID, Pg)` tuples, exact text extraction, and 300-DPI zero-pixel visual regressions.
+- Validate on full 23-page real lecture integration deck (`lecture 1.pdf`) tagging 12 columns, 2 figures, 12 blocks, 12 block titles, 20 lists, and 76 items across 485 structure objects with zero pixel differences.
+
 ## 0.7 — 2026-09-01
 
 - Add automatic semantic tagging for graphics and figures (`\includegraphics`, `figure` environment).
