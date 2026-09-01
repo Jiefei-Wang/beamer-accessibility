@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.4 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.5 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -23,13 +23,25 @@
 \bool_new:N \g__ba_para_open_bool
 \bool_new:N \g__ba_in_title_bool
 \bool_new:N \g__ba_in_label_bool
-\bool_new:N \g__ba_list_pending_bool
-\bool_new:N \g__ba_list_open_bool
-\bool_new:N \g__ba_li_open_bool
-\bool_new:N \g__ba_lbody_open_bool
 \bool_new:N \g__ba_frame_unsupported_bool
 \int_new:N  \g__ba_para_suppress_int
 \int_new:N  \g__ba_list_depth_int
+
+% Per-depth list state for nesting levels 1, 2, and 3:
+\bool_new:N \g__ba_list_pending_i_bool
+\bool_new:N \g__ba_list_open_i_bool
+\bool_new:N \g__ba_li_open_i_bool
+\bool_new:N \g__ba_lbody_open_i_bool
+
+\bool_new:N \g__ba_list_pending_ii_bool
+\bool_new:N \g__ba_list_open_ii_bool
+\bool_new:N \g__ba_li_open_ii_bool
+\bool_new:N \g__ba_lbody_open_ii_bool
+
+\bool_new:N \g__ba_list_pending_iii_bool
+\bool_new:N \g__ba_list_open_iii_bool
+\bool_new:N \g__ba_li_open_iii_bool
+\bool_new:N \g__ba_lbody_open_iii_bool
 
 \cs_new_protected:Npn \ba_body_begin:
   {
@@ -80,30 +92,40 @@
       }
   }
 
-\cs_new_protected:Npn \ba_list_close_item:
+\cs_new_protected:Npn \ba_list_close_item_at:n #1
   {
     \ba_paragraph_end:
-    \bool_if:NT \g__ba_lbody_open_bool
+    \use:c { bool_if:cT } { g__ba_lbody_open_ \int_to_roman:n { #1 } _bool }
       {
         \tag_struct_end:
-        \bool_gset_false:N \g__ba_lbody_open_bool
+        \bool_gset_false:c { g__ba_lbody_open_ \int_to_roman:n { #1 } _bool }
       }
-    \bool_if:NT \g__ba_li_open_bool
+    \use:c { bool_if:cT } { g__ba_li_open_ \int_to_roman:n { #1 } _bool }
       {
         \tag_struct_end:
-        \bool_gset_false:N \g__ba_li_open_bool
+        \bool_gset_false:c { g__ba_li_open_ \int_to_roman:n { #1 } _bool }
       }
+  }
+
+\cs_new_protected:Npn \ba_list_close_at:n #1
+  {
+    \ba_list_close_item_at:n { #1 }
+    \use:c { bool_if:cT } { g__ba_list_open_ \int_to_roman:n { #1 } _bool }
+      {
+        \tag_struct_end:
+        \bool_gset_false:c { g__ba_list_open_ \int_to_roman:n { #1 } _bool }
+      }
+    \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { #1 } _bool }
   }
 
 \cs_new_protected:Npn \ba_list_close_all:
   {
-    \ba_list_close_item:
-    \bool_if:NT \g__ba_list_open_bool
+    \ba_paragraph_end:
+    \int_step_inline:nnnn { \g__ba_list_depth_int } { -1 } { 1 }
       {
-        \tag_struct_end:
-        \bool_gset_false:N \g__ba_list_open_bool
+        \ba_list_close_at:n { ##1 }
       }
-    \bool_gset_false:N \g__ba_list_pending_bool
+    \int_gzero:N \g__ba_list_depth_int
   }
 
 \cs_new_protected:Npn \ba_frame_begin:
@@ -114,10 +136,13 @@
         \bool_gset_true:N \g__ba_frame_active_bool
         \bool_gset_false:N \g__ba_body_active_bool
         \bool_gset_false:N \g__ba_frame_unsupported_bool
-        \bool_gset_false:N \g__ba_list_pending_bool
-        \bool_gset_false:N \g__ba_list_open_bool
-        \bool_gset_false:N \g__ba_li_open_bool
-        \bool_gset_false:N \g__ba_lbody_open_bool
+        \int_step_inline:nn { 3 }
+          {
+            \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { ##1 } _bool }
+            \bool_gset_false:c { g__ba_list_open_ \int_to_roman:n { ##1 } _bool }
+            \bool_gset_false:c { g__ba_li_open_ \int_to_roman:n { ##1 } _bool }
+            \bool_gset_false:c { g__ba_lbody_open_ \int_to_roman:n { ##1 } _bool }
+          }
         \int_gzero:N \g__ba_list_depth_int
         \int_gzero:N \g__ba_para_suppress_int
       }
@@ -169,7 +194,7 @@
       { \int_gdecr:N \g__ba_para_suppress_int }
   }
 
-\cs_new_protected:Npn \ba_itemize_begin:
+\cs_new_protected:Npn \ba_list_begin:
   {
     \ba_paragraph_end:
     \bool_if:NT \g__ba_frame_active_bool
@@ -178,13 +203,13 @@
           {
             \int_compare:nNnTF { \g__ba_para_suppress_int } = { 0 }
               {
-                \int_compare:nNnTF { \g__ba_list_depth_int } = { 0 }
+                \int_compare:nNnTF { \g__ba_list_depth_int } < { 3 }
                   {
-                    \bool_gset_true:N \g__ba_list_pending_bool
-                    \int_gset:Nn \g__ba_list_depth_int { 1 }
+                    \int_gincr:N \g__ba_list_depth_int
+                    \bool_gset_true:c { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
                   }
                   {
-                    % Nested itemize is deferred to v0.5; mark unsupported.
+                    % List depth > 3 is unsupported.
                     \ba_suppress_begin:
                   }
               }
@@ -195,17 +220,13 @@
       }
   }
 
-\cs_new_protected:Npn \ba_itemize_end:
+\cs_new_protected:Npn \ba_list_end:
   {
-    \bool_if:NT \g__ba_list_open_bool
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
       {
-        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
-          {
-            \ba_list_close_all:
-            \int_gzero:N \g__ba_list_depth_int
-          }
+        \ba_list_close_at:n { \g__ba_list_depth_int }
+        \int_gdecr:N \g__ba_list_depth_int
       }
-    \bool_gset_false:N \g__ba_list_pending_bool
     \int_compare:nNnT { \g__ba_para_suppress_int } > { 0 }
       {
         \int_gdecr:N \g__ba_para_suppress_int
@@ -215,19 +236,19 @@
 \cs_new_protected:Npn \ba_item_label_begin:
   {
     \ba_paragraph_end:
-    \bool_if:NT \g__ba_list_pending_bool
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
       {
-        \tag_struct_begin:n { tag=L }
-        \bool_gset_true:N \g__ba_list_open_bool
-        \bool_gset_false:N \g__ba_list_pending_bool
-      }
-    \bool_if:NT \g__ba_list_open_bool
-      {
-        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
+        \use:c { bool_if:cT } { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
           {
-            \ba_list_close_item:
+            \tag_struct_begin:n { tag=L }
+            \bool_gset_true:c { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+            \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+          }
+        \use:c { bool_if:cT } { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+          {
+            \ba_list_close_item_at:n { \g__ba_list_depth_int }
             \tag_struct_begin:n { tag=LI }
-            \bool_gset_true:N \g__ba_li_open_bool
+            \bool_gset_true:c { g__ba_li_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
             \tag_struct_begin:n { tag=Lbl }
             \bool_gset_true:N \g__ba_in_label_bool
             \tag_mc_begin:n { }
@@ -237,15 +258,18 @@
 
 \cs_new_protected:Npn \ba_item_label_end:
   {
-    \bool_if:NT \g__ba_list_open_bool
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
       {
-        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
+        \use:c { bool_if:cT } { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
           {
-            \tag_mc_end:
-            \tag_struct_end:
-            \bool_gset_false:N \g__ba_in_label_bool
-            \tag_struct_begin:n { tag=LBody }
-            \bool_gset_true:N \g__ba_lbody_open_bool
+            \bool_if:NT \g__ba_in_label_bool
+              {
+                \tag_mc_end:
+                \tag_struct_end:
+                \bool_gset_false:N \g__ba_in_label_bool
+                \tag_struct_begin:n { tag=LBody }
+                \bool_gset_true:c { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+              }
           }
       }
   }
@@ -263,14 +287,30 @@
 \AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
 \AddToHook{para/end}{\csname ba_paragraph_end:\endcsname}
 
-% Single-level plain itemize support in v0.4:
-% Hook Beamer's itemize environment lifecycle.
-\AddToHook{env/itemize/begin}{\csname ba_itemize_begin:\endcsname}
-\AddToHook{env/itemize/end}{\csname ba_itemize_end:\endcsname}
+% List support for itemize and enumerate across nesting levels 1, 2, and 3:
+\AddToHook{env/itemize/begin}{\csname ba_list_begin:\endcsname}
+\AddToHook{env/itemize/end}{\csname ba_list_end:\endcsname}
+\AddToHook{env/enumerate/begin}{\csname ba_list_begin:\endcsname}
+\AddToHook{env/enumerate/end}{\csname ba_list_end:\endcsname}
 
 % Wrap Beamer item and title templates after all preamble theme definitions.
 \AddToHook{begindocument/end}{%
   \addtobeamertemplate{itemize item}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{itemize subitem}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{itemize subsubitem}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{enumerate item}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{enumerate subitem}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{enumerate subsubitem}
     {\csname ba_item_label_begin:\endcsname}
     {\csname ba_item_label_end:\endcsname}%
   \addtobeamertemplate{frametitle}
@@ -288,7 +328,7 @@
 }
 
 % Safe overlay detection: when an item specifies overlay actions (e.g. \item<2->),
-% Beamer calls \beamer@parseitem. For v0.4, overlay lists are marked unsupported
+% Beamer calls \beamer@parseitem. For v0.5, overlay lists are marked unsupported
 % to avoid generating misleading partial structure.
 \let\ba@orig@beamer@parseitem\beamer@parseitem
 \def\beamer@parseitem<#1>{%
@@ -297,9 +337,7 @@
 }
 \makeatother
 
-% Enumerate and description lists remain unsupported in v0.4 and fall back cleanly.
-\AddToHook{env/enumerate/begin}{\csname ba_suppress_begin:\endcsname}
-\AddToHook{env/enumerate/end}{\csname ba_suppress_end:\endcsname}
+% Description lists remain unsupported in v0.5 and fall back cleanly.
 \AddToHook{env/description/begin}{\csname ba_suppress_begin:\endcsname}
 \AddToHook{env/description/end}{\csname ba_suppress_end:\endcsname}
 
@@ -307,6 +345,7 @@
 % structure only after Beamer has constructed the title and output boxes.
 \AddToHook{env/beamer@frameslide/begin}{\csname ba_frame_begin:\endcsname}
 \AddToHook{env/beamer@frameslide/after}{\csname ba_frame_end:\endcsname}
+
 
 
 

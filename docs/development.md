@@ -2,9 +2,9 @@
 
 ## Current milestone
 
-Version 0.4 provides automatic low-level tagging for rendered frames, frame titles, ordinary paragraphs, and single-level plain `itemize` lists. It retains upstream Beamer as the visual implementation and uses pdfLaTeX.
+Version 0.5 provides automatic low-level tagging for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), and mixed `itemize`/`enumerate` nesting. It retains upstream Beamer as the visual implementation and uses pdfLaTeX.
 
-Unsupported list constructs (such as nested lists, item overlay specifications, enumerate, and description) are safely detected and fall back cleanly to untagged Beamer output without corrupting the structure tree.
+Unsupported constructs (such as item overlay specifications and description lists) are safely detected and fall back cleanly to untagged Beamer output without corrupting the structure tree.
 
 ## Architecture decision
 
@@ -36,32 +36,43 @@ StructTreeRoot
           LBody
             P
               MCR
+            L (nested sublist)
+              LI
+                Lbl
+                  MCR
+                LBody
+                  P
+                    MCR
 ```
 
 - Beamer processes the frame body before constructing the title box. The title template uses `firstkid=true` so the frame title precedes body paragraphs semantically without changing the visual box order.
-- List tagging intercepts Beamer's `itemize` environment lifecycle and `itemize item` template, emitting standard `L -> LI -> Lbl + LBody -> P` hierarchies.
+- List tagging intercepts Beamer's `itemize` and `enumerate` environment lifecycles and templates (`itemize item/subitem/subsubitem`, `enumerate item/subitem/subsubitem`), emitting compliant `L -> LI -> Lbl + LBody -> (P, L ...)` hierarchies across nesting levels 1, 2, and 3.
 - Precise frame body boundary gating prevents stray paragraph tagging from presentation furniture (headline, footline, navigation symbols, and sidebars).
 
-## Next milestone (v0.5)
+## Next milestone (v0.6)
 
-Add support for nested `itemize` and `enumerate` lists:
+Add support for Beamer block environments (`block`, `alertblock`, `exampleblock`):
 
 ```text
-L
-  LI
-    Lbl
-    LBody
-      P
-      L (nested list)
-        LI
-          Lbl
-          LBody
-            P
+frame -> Sect
+  frametitle -> H1
+  block -> Div
+    blocktitle -> H2
+      MCR
+    P
+      MCR
+    L
+      LI
+        Lbl
+        LBody
+          P
 ```
 
-- Track list nesting depth and type (`itemize` vs `enumerate`).
-- Map `enumerate` item labels (`\insertenumlabel`, `enumi`, `enumii`, etc.) cleanly to `Lbl`.
-- Handle mixed nesting (e.g. `enumerate` inside `itemize` and vice versa).
-- Maintain 0-pixel visual identity and strict structure validity.
+- Tag block environments as `block/Div` containers.
+- Tag block titles as `blocktitle/H2` headers.
+- Tag block body contents (paragraphs, itemize, enumerate) within the block container.
+- Handle blocks without titles, custom blocks, and nested blocks.
+- Maintain 0-pixel visual identity and exact text match.
+
 
 

@@ -232,6 +232,53 @@ def main() -> None:
             baseline="inline-formatting-baseline",
             tree_checker=lambda f: check_list_structure(f, expected_item_count=2),
         ),
+        # Nested itemize fixtures (v0.5)
+        FixtureSpec(
+            name="nested-itemize-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 4}),
+            frame_children=["/frametitle", "/L"],
+            baseline="nested-itemize-baseline",
+        ),
+        FixtureSpec(
+            name="nested-itemize-3level-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 3, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            frame_children=["/frametitle", "/L"],
+            baseline="nested-itemize-3level-baseline",
+        ),
+        # Enumerate and mixed nesting fixtures (v0.5)
+        FixtureSpec(
+            name="basic-enumerate-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            frame_children=["/frametitle", "/L"],
+            baseline="basic-enumerate-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=3),
+        ),
+        FixtureSpec(
+            name="nested-enumerate-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 4}),
+            frame_children=["/frametitle", "/L"],
+            baseline="nested-enumerate-baseline",
+        ),
+        FixtureSpec(
+            name="mixed-itemize-enumerate-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 4, "/LI": 7, "/Lbl": 7, "/LBody": 7, "/P": 7}),
+            frame_children=["/frametitle", "/L", "/L"],
+            baseline="mixed-itemize-enumerate-baseline",
+        ),
+        FixtureSpec(
+            name="enumerate-inline-formatting-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 2}),
+            frame_children=["/frametitle", "/L"],
+            baseline="enumerate-inline-formatting-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=2),
+        ),
+        FixtureSpec(
+            name="enumerate-multi-para-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 3}),
+            frame_children=["/frametitle", "/L"],
+            baseline="enumerate-multi-para-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=2, expected_body_p_counts=[2, 1]),
+        ),
         # Unsupported fallback fixtures
         FixtureSpec(
             name="unsupported-list-tagged",
@@ -243,13 +290,6 @@ def main() -> None:
             name="unsupported-overlay-list-tagged",
             roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2}),
             baseline="unsupported-overlay-list-baseline",
-        ),
-        FixtureSpec(
-            name="unsupported-nested-list-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 1, "/Lbl": 1, "/LBody": 1, "/P": 1}),
-            frame_children=["/frametitle", "/L"],
-            baseline="unsupported-nested-list-baseline",
-            tree_checker=lambda f: check_list_structure(f, expected_item_count=1),
         ),
     ]
 

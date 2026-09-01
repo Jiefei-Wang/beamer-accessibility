@@ -2,7 +2,7 @@
 
 Experimental low-level accessibility support for Beamer that preserves Beamer's visual implementation and ordinary frame syntax.
 
-The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, and single-level plain `itemize` lists. Unsupported constructs (such as nested lists, item overlay specifications, enumerate, and description) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
+The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), and mixed `itemize`/`enumerate` nesting. Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
 
 ## Requirements
 
@@ -22,15 +22,19 @@ The wrapper class initializes PDF management early and then loads upstream Beame
 \usetheme{Boadilla}
 
 \begin{document}
-\begin{frame}{Test title}
+\begin{frame}{Nested list overview}
 Introductory paragraph before the list.
 
-\begin{itemize}
-\item First item with inline \textbf{bold} and \alert{alert}.
-\item Second item with multiple paragraphs.
+\begin{enumerate}
+\item First numbered milestone with \textbf{bold} text.
+  \begin{itemize}
+  \item Nested bullet subitem A.
+  \item Nested bullet subitem B with multiple paragraphs.
 
-  Continuing paragraph inside the second item.
-\end{itemize}
+    Second paragraph within nested subitem.
+  \end{itemize}
+\item Second numbered milestone.
+\end{enumerate}
 
 Summary paragraph after the list.
 \end{frame}
@@ -59,19 +63,23 @@ Document
         Lbl
         LBody
           P
+          L (nested sublist)
+            LI
+              Lbl
+              LBody
+                P
 ```
 
 - **Frame Titles:** The title is placed before body paragraphs in semantic order (`firstkid=true`) even though Beamer constructs its title box after processing the frame body.
-- **Lists (`itemize`):** Emits compliant `L -> LI -> (Lbl, LBody -> P)` hierarchies.
+- **Lists (`itemize` & `enumerate`):** Emits compliant `L -> LI -> (Lbl, LBody -> (P, L ...))` hierarchies for single-level and nested lists up to 3 levels deep (`itemize item/subitem/subsubitem`, `enumerate item/subitem/subsubitem`, and arbitrary mixed nestings).
 - **Transitions:** Seamless paragraph open/close boundaries before, after, and within list items.
 - **Visual & Text Identity:** Tagged output is guaranteed to have **0 differing pixels at 300 DPI** against untagged baseline and identical extracted text.
 
 ## Unsupported constructs & graceful fallback
 
-In v0.4:
-- Itemize items with explicit overlay specifications (`\item<1->`, `\item<2->`) fall back cleanly to untagged presentation.
-- Nested itemize environments fall back cleanly to untagged presentation.
-- `enumerate` and `description` environments fall back cleanly to untagged presentation.
+In v0.5:
+- Items with explicit overlay specifications (`\item<1->`, `\item<2->`) fall back cleanly to untagged presentation.
+- `description` environments fall back cleanly to untagged presentation.
 - Blocks, tables, columns, math, figures, graphics, and notes are scheduled for subsequent milestones.
 
 This project does not yet claim PDF/UA conformance.

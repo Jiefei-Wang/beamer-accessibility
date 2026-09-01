@@ -1,0 +1,24 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usetheme{Boadilla}
+
+\begin{document}
+\begin{frame}{Mixed itemize and enumerate}
+\begin{enumerate}
+\item Numbered item.
+  \begin{itemize}
+  \item Bullet subitem 1.
+  \item Bullet subitem 2.
+  \end{itemize}
+\item Second numbered item.
+\end{enumerate}
+
+\begin{itemize}
+\item Bullet item.
+  \begin{enumerate}
+  \item Numbered subitem A.
+  \item Numbered subitem B.
+  \end{enumerate}
+\end{itemize}
+\end{frame}
+\end{document}
