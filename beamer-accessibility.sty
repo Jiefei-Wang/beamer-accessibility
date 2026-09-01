@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.3 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.4 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -19,46 +19,50 @@
 % The package wraps Beamer's existing visual implementation. It emits only
 % structure and marked-content objects; Beamer remains responsible for layout.
 \bool_new:N \g__ba_frame_active_bool
+\bool_new:N \g__ba_body_active_bool
 \bool_new:N \g__ba_para_open_bool
 \bool_new:N \g__ba_in_title_bool
+\bool_new:N \g__ba_in_label_bool
+\bool_new:N \g__ba_list_pending_bool
+\bool_new:N \g__ba_list_open_bool
+\bool_new:N \g__ba_li_open_bool
+\bool_new:N \g__ba_lbody_open_bool
 \bool_new:N \g__ba_frame_unsupported_bool
 \int_new:N  \g__ba_para_suppress_int
+\int_new:N  \g__ba_list_depth_int
 
-\cs_new_protected:Npn \ba_frame_begin:
+\cs_new_protected:Npn \ba_body_begin:
   {
-    \bool_if:NF \g__ba_frame_active_bool
-      {
-        \tag_struct_begin:n { tag=frame }
-        \bool_gset_true:N \g__ba_frame_active_bool
-        \bool_gset_false:N \g__ba_frame_unsupported_bool
-      }
+    \bool_gset_true:N \g__ba_body_active_bool
   }
 
-\cs_new_protected:Npn \ba_frame_end:
+\cs_new_protected:Npn \ba_body_end:
   {
     \ba_paragraph_end:
-    \bool_if:NT \g__ba_frame_active_bool
-      {
-        \tag_struct_end:
-        \bool_gset_false:N \g__ba_frame_active_bool
-      }
+    \bool_gset_false:N \g__ba_body_active_bool
   }
 
 \cs_new_protected:Npn \ba_paragraph_begin:
   {
     \bool_if:NT \g__ba_frame_active_bool
       {
-        \bool_if:NF \g__ba_in_title_bool
+        \bool_if:NT \g__ba_body_active_bool
           {
-            \bool_if:NF \g__ba_frame_unsupported_bool
+            \bool_if:NF \g__ba_in_title_bool
               {
-                \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
+                \bool_if:NF \g__ba_in_label_bool
                   {
-                    \bool_if:NF \g__ba_para_open_bool
+                    \bool_if:NF \g__ba_frame_unsupported_bool
                       {
-                        \tag_struct_begin:n { tag=P }
-                        \tag_mc_begin:n { }
-                        \bool_gset_true:N \g__ba_para_open_bool
+                        \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
+                          {
+                            \bool_if:NF \g__ba_para_open_bool
+                              {
+                                \tag_struct_begin:n { tag=P }
+                                \tag_mc_begin:n { }
+                                \bool_gset_true:N \g__ba_para_open_bool
+                              }
+                          }
                       }
                   }
               }
@@ -76,9 +80,63 @@
       }
   }
 
-\cs_new_protected:Npn \ba_frametitle_begin:
+\cs_new_protected:Npn \ba_list_close_item:
   {
     \ba_paragraph_end:
+    \bool_if:NT \g__ba_lbody_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_lbody_open_bool
+      }
+    \bool_if:NT \g__ba_li_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_li_open_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_list_close_all:
+  {
+    \ba_list_close_item:
+    \bool_if:NT \g__ba_list_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_list_open_bool
+      }
+    \bool_gset_false:N \g__ba_list_pending_bool
+  }
+
+\cs_new_protected:Npn \ba_frame_begin:
+  {
+    \bool_if:NF \g__ba_frame_active_bool
+      {
+        \tag_struct_begin:n { tag=frame }
+        \bool_gset_true:N \g__ba_frame_active_bool
+        \bool_gset_false:N \g__ba_body_active_bool
+        \bool_gset_false:N \g__ba_frame_unsupported_bool
+        \bool_gset_false:N \g__ba_list_pending_bool
+        \bool_gset_false:N \g__ba_list_open_bool
+        \bool_gset_false:N \g__ba_li_open_bool
+        \bool_gset_false:N \g__ba_lbody_open_bool
+        \int_gzero:N \g__ba_list_depth_int
+        \int_gzero:N \g__ba_para_suppress_int
+      }
+  }
+
+\cs_new_protected:Npn \ba_frame_end:
+  {
+    \ba_body_end:
+    \ba_list_close_all:
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_frame_active_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_frametitle_begin:
+  {
+    \ba_body_end:
     \bool_if:NT \g__ba_frame_active_bool
       {
         \bool_gset_true:N \g__ba_in_title_bool
@@ -97,15 +155,9 @@
       }
   }
 
-% Retained as a low-level experimental API. The automatic hooks are idempotent
-% with these commands, which keeps the validated manual prototypes usable.
-\NewDocumentCommand \BeamerAccessibilityFrameBegin { } { \ba_frame_begin: }
-\NewDocumentCommand \BeamerAccessibilityFrameEnd { } { \ba_frame_end: }
-\NewDocumentCommand \BeamerAccessibilityParagraphBegin { } { \ba_paragraph_begin: }
-\NewDocumentCommand \BeamerAccessibilityParagraphEnd { } { \ba_paragraph_end: }
-
 \cs_new_protected:Npn \ba_suppress_begin:
   {
+    \ba_list_close_all:
     \ba_paragraph_end:
     \bool_gset_true:N \g__ba_frame_unsupported_bool
     \int_gincr:N \g__ba_para_suppress_int
@@ -116,17 +168,136 @@
     \int_compare:nNnT { \g__ba_para_suppress_int } > { 0 }
       { \int_gdecr:N \g__ba_para_suppress_int }
   }
+
+\cs_new_protected:Npn \ba_itemize_begin:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_if:NF \g__ba_frame_unsupported_bool
+          {
+            \int_compare:nNnTF { \g__ba_para_suppress_int } = { 0 }
+              {
+                \int_compare:nNnTF { \g__ba_list_depth_int } = { 0 }
+                  {
+                    \bool_gset_true:N \g__ba_list_pending_bool
+                    \int_gset:Nn \g__ba_list_depth_int { 1 }
+                  }
+                  {
+                    % Nested itemize is deferred to v0.5; mark unsupported.
+                    \ba_suppress_begin:
+                  }
+              }
+              {
+                \int_gincr:N \g__ba_para_suppress_int
+              }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_itemize_end:
+  {
+    \bool_if:NT \g__ba_list_open_bool
+      {
+        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
+          {
+            \ba_list_close_all:
+            \int_gzero:N \g__ba_list_depth_int
+          }
+      }
+    \bool_gset_false:N \g__ba_list_pending_bool
+    \int_compare:nNnT { \g__ba_para_suppress_int } > { 0 }
+      {
+        \int_gdecr:N \g__ba_para_suppress_int
+      }
+  }
+
+\cs_new_protected:Npn \ba_item_label_begin:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_list_pending_bool
+      {
+        \tag_struct_begin:n { tag=L }
+        \bool_gset_true:N \g__ba_list_open_bool
+        \bool_gset_false:N \g__ba_list_pending_bool
+      }
+    \bool_if:NT \g__ba_list_open_bool
+      {
+        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
+          {
+            \ba_list_close_item:
+            \tag_struct_begin:n { tag=LI }
+            \bool_gset_true:N \g__ba_li_open_bool
+            \tag_struct_begin:n { tag=Lbl }
+            \bool_gset_true:N \g__ba_in_label_bool
+            \tag_mc_begin:n { }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_item_label_end:
+  {
+    \bool_if:NT \g__ba_list_open_bool
+      {
+        \int_compare:nNnT { \g__ba_list_depth_int } = { 1 }
+          {
+            \tag_mc_end:
+            \tag_struct_end:
+            \bool_gset_false:N \g__ba_in_label_bool
+            \tag_struct_begin:n { tag=LBody }
+            \bool_gset_true:N \g__ba_lbody_open_bool
+          }
+      }
+  }
+
+% Retained as a low-level experimental API. The automatic hooks are idempotent
+% with these commands, which keeps the validated manual prototypes usable.
+\NewDocumentCommand \BeamerAccessibilityFrameBegin { } { \ba_frame_begin: }
+\NewDocumentCommand \BeamerAccessibilityFrameEnd { } { \ba_frame_end: }
+\NewDocumentCommand \BeamerAccessibilityParagraphBegin { } { \ba_paragraph_begin: }
+\NewDocumentCommand \BeamerAccessibilityParagraphEnd { } { \ba_paragraph_end: }
+
 \ExplSyntaxOff
 
-% Ordinary prose is tagged only while a rendered Beamer slide is active.
+% Ordinary prose is tagged only while a rendered Beamer slide body is active.
 \AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
 \AddToHook{para/end}{\csname ba_paragraph_end:\endcsname}
 
-% Lists are deliberately unsupported in v0.3. Once encountered, paragraph
-% tagging remains suppressed for the rest of that frame. The list still uses
-% Beamer's original implementation and receives no misleading partial tags.
-\AddToHook{env/itemize/begin}{\csname ba_suppress_begin:\endcsname}
-\AddToHook{env/itemize/end}{\csname ba_suppress_end:\endcsname}
+% Single-level plain itemize support in v0.4:
+% Hook Beamer's itemize environment lifecycle.
+\AddToHook{env/itemize/begin}{\csname ba_itemize_begin:\endcsname}
+\AddToHook{env/itemize/end}{\csname ba_itemize_end:\endcsname}
+
+% Wrap Beamer item and title templates after all preamble theme definitions.
+\AddToHook{begindocument/end}{%
+  \addtobeamertemplate{itemize item}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{frametitle}
+    {\csname ba_frametitle_begin:\endcsname}
+    {\csname ba_frametitle_end:\endcsname}%
+}
+
+% Precise frame body boundary: Beamer evaluates frame preamble setup before
+% checkframetitle; the user-authored frame body begins immediately after.
+\makeatletter
+\let\ba@orig@beamer@checkframetitle\beamer@checkframetitle
+\def\beamer@checkframetitle{\@ifnextchar\bgroup\ba@inlineframetitle{\csname ba_body_begin:\endcsname}}
+\def\ba@inlineframetitle#1{%
+  \@ifnextchar\bgroup{\frametitle{#1}\framesubtitle\csname ba_body_begin:\endcsname}{\frametitle{#1}\relax\csname ba_body_begin:\endcsname}%
+}
+
+% Safe overlay detection: when an item specifies overlay actions (e.g. \item<2->),
+% Beamer calls \beamer@parseitem. For v0.4, overlay lists are marked unsupported
+% to avoid generating misleading partial structure.
+\let\ba@orig@beamer@parseitem\beamer@parseitem
+\def\beamer@parseitem<#1>{%
+  \csname ba_suppress_begin:\endcsname%
+  \ba@orig@beamer@parseitem<#1>%
+}
+\makeatother
+
+% Enumerate and description lists remain unsupported in v0.4 and fall back cleanly.
 \AddToHook{env/enumerate/begin}{\csname ba_suppress_begin:\endcsname}
 \AddToHook{env/enumerate/end}{\csname ba_suppress_end:\endcsname}
 \AddToHook{env/description/begin}{\csname ba_suppress_begin:\endcsname}
@@ -137,9 +308,5 @@
 \AddToHook{env/beamer@frameslide/begin}{\csname ba_frame_begin:\endcsname}
 \AddToHook{env/beamer@frameslide/after}{\csname ba_frame_end:\endcsname}
 
-% Beamer builds the title box after the body. firstkid keeps the title first in
-% semantic order without moving its visual box.
-\addtobeamertemplate{frametitle}
-  {\csname ba_frametitle_begin:\endcsname}
-  {\csname ba_frametitle_end:\endcsname}
+
 

@@ -2,9 +2,9 @@
 
 ## Current milestone
 
-Version 0.3 provides automatic low-level tagging for rendered frames, frame titles, and ordinary paragraphs. It retains upstream Beamer as the visual implementation and uses pdfLaTeX.
+Version 0.4 provides automatic low-level tagging for rendered frames, frame titles, ordinary paragraphs, and single-level plain `itemize` lists. It retains upstream Beamer as the visual implementation and uses pdfLaTeX.
 
-Unsupported list environments are detected and deliberately receive no partial package tagging. Once a list is encountered, paragraph tagging is suppressed for the remainder of that frame.
+Unsupported list constructs (such as nested lists, item overlay specifications, enumerate, and description) are safely detected and fall back cleanly to untagged Beamer output without corrupting the structure tree.
 
 ## Architecture decision
 
@@ -29,22 +29,39 @@ StructTreeRoot
         MCR
       P
         MCR
+      L
+        LI
+          Lbl
+            MCR
+          LBody
+            P
+              MCR
 ```
 
-Beamer processes the frame body before constructing the title box. The title template uses `firstkid=true` so the frame title precedes body paragraphs semantically without changing the visual box order.
+- Beamer processes the frame body before constructing the title box. The title template uses `firstkid=true` so the frame title precedes body paragraphs semantically without changing the visual box order.
+- List tagging intercepts Beamer's `itemize` environment lifecycle and `itemize item` template, emitting standard `L -> LI -> Lbl + LBody -> P` hierarchies.
+- Precise frame body boundary gating prevents stray paragraph tagging from presentation furniture (headline, footline, navigation symbols, and sidebars).
 
-## Next milestone
+## Next milestone (v0.5)
 
-Add automatic tagging for a plain two-item Beamer `itemize` by wrapping Beamer's existing list lifecycle and label template:
+Add support for nested `itemize` and `enumerate` lists:
 
 ```text
 L
   LI
     Lbl
     LBody
+      P
+      L (nested list)
+        LI
+          Lbl
+          LBody
+            P
 ```
 
-The implementation must not parse or replace Beamer's overlay-aware list layout. Optional labels, overlays, and nesting must be tested separately; unsupported forms should fall back to untagged Beamer output.
+- Track list nesting depth and type (`itemize` vs `enumerate`).
+- Map `enumerate` item labels (`\insertenumlabel`, `enumi`, `enumii`, etc.) cleanly to `Lbl`.
+- Handle mixed nesting (e.g. `enumerate` inside `itemize` and vice versa).
+- Maintain 0-pixel visual identity and strict structure validity.
 
-Do not begin `enumerate`, `description`, blocks, tables, math, graphics, or PDF/UA metadata until the isolated `itemize` milestone passes structure and zero-pixel visual tests.
 

@@ -6,18 +6,14 @@ $fixtures = Join-Path $repoRoot "tests/fixtures"
 New-Item -ItemType Directory -Force $buildRoot | Out-Null
 $outputArgument = "-output-directory=$buildRoot"
 
-$documents = @(
-    "frame-paragraph-baseline",
-    "frame-paragraph-tagged",
-    "unsupported-list-baseline",
-    "unsupported-list-tagged",
-    "package-only"
-)
+$fixtureFiles = Get-ChildItem -Path $fixtures -Filter "*.tex" | Sort-Object Name
 
 Push-Location $repoRoot
 try {
-    foreach ($document in $documents) {
-        $source = Join-Path $fixtures "$document.tex"
+    foreach ($file in $fixtureFiles) {
+        $document = $file.BaseName
+        $source = $file.FullName
+        Write-Host "Compiling $document..."
         & pdflatex -interaction=nonstopmode -halt-on-error $outputArgument $source | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "First LaTeX pass failed: $document" }
         & pdflatex -interaction=nonstopmode -halt-on-error $outputArgument $source | Out-Null
@@ -29,3 +25,4 @@ try {
 finally {
     Pop-Location
 }
+
