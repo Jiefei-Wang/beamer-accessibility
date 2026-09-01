@@ -130,6 +130,13 @@ This:
 4. Asserts **0 differing pixels at 300 DPI** via `pdftoppm` rendering.
 5. Runs the automated Assistive Technology validator (`tests/verify_at.py`) checking Catalog metadata, RoleMap mappings, `/Figure` `/Alt` attributes, PDF/UA list grammar, and leaf MCR uniqueness.
 
+## Documentation
+
+- **[User Guide](docs/user-guide.md):** Detailed guide for authoring accessible Beamer slides, graphics with alt text, multi-column layouts, blocks, and lists.
+- **[Architecture Specification](docs/architecture.md):** Deep-dive into early PDF management, hook timing, state machine invariants, and stream MC balance.
+- **[Validation Record](docs/validation.md):** Full test fixture matrix, theme compatibility results, and real-world 23-slide deck regression records.
+- **[Development & Roadmap](docs/development.md):** Development history, design decisions, and future milestones.
+
 ## Installation
 
 For the current MiKTeX user:
@@ -139,6 +146,14 @@ For the current MiKTeX user:
 ```
 
 The script installs the `.sty` and `.cls` files in the user MiKTeX tree and refreshes the filename database.
+
+## Release Packaging
+
+To build a clean CTAN/distribution release zip archive:
+
+```powershell
+./scripts/build-release.ps1
+```
 
 ## License
 

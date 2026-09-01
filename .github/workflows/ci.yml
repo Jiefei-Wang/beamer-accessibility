@@ -1,0 +1,45 @@
+name: Test and Validate Accessibility
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pypdf pillow numpy
+
+    - name: Install TeX Live and Poppler utilities
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended poppler-utils
+
+    - name: Run Test Suite and Accessibility Validation
+      run: |
+        mkdir -p build/tests
+        python -c "
+        import os, subprocess, glob
+        fixtures = sorted(glob.glob('tests/fixtures/*.tex'))
+        for f in fixtures:
+            doc = os.path.splitext(os.path.basename(f))[0]
+            print(f'Compiling {doc}...')
+            subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], check=True, stdout=subprocess.DEVNULL)
+        "
+        python tests/verify.py build/tests
+        python tests/verify_at.py build/tests

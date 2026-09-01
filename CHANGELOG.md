@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0 — 2026-09-01
+
+- Official 1.0 stable release of `beamer-accessibility`.
+- Standard-compliant low-level PDF accessibility tagging for LaTeX Beamer presentations with 0-pixel visual identity and 100% exact text extraction match.
+- Core features:
+  - Document Catalog `/Lang` and `/ViewerPreferences` (`/DisplayDocTitle true`) configuration.
+  - Slide frames (`/frame` -> `Sect`) and slide titles (`/frametitle` -> `H1`) in natural semantic reading order (`firstkid=true`).
+  - Standard paragraphs (`/P` -> `P`) with seamless container and inline transitions.
+  - Multi-column slide layouts (`columns`, `column` environment, `\column` command -> `Div`).
+  - Blocks (`block`, `alertblock`, `exampleblock`, untitled blocks -> `Div` container + `H2` blocktitle).
+  - Nested `itemize` and `enumerate` lists up to 3 levels deep with strict PDF/UA list grammar (`L -> LI -> Lbl + LBody -> (P, L ...)`).
+  - Graphics and figure alternative text (`\includegraphics[alt={...}]{...}`, `figure` environment -> `/Figure` with standard `/Alt` attribute).
+  - Hardening for inline/display math, fragile verbatim listings (`listings`), and slide footnotes.
+  - Graceful fallback suppression for unsupported constructs (item overlays, description lists).
+- Testing and Validation:
+  - 40 isolated test fixture suites (80 `.tex` files) verified with 0 differing pixels at 300 DPI, structure tree assertions, and AT accessibility validation.
+  - 10 standard Beamer themes verified (`default`, `Boadilla`, `Madrid`, `Warsaw`, `Berlin`, `Montpellier`, `Hannover`, `CambridgeUS`, `Pittsburgh`, `Rochester`).
+  - Full 23-page real lecture integration deck (`lecture 1.pdf`) verified with 0 differing pixels across all 23 slides, 250 unique MCIDs, and zero AT validation errors.
+- Comprehensive documentation (`user-guide.md`, `architecture.md`, `development.md`, `validation.md`), GitHub Actions CI workflow, and automated release packaging (`build-release.ps1`).
+
 ## 0.9 — 2026-09-01
 
 - Add Document Catalog metadata tagging: inject standard `/Lang` attribute and `/ViewerPreferences` dictionary with `/DisplayDocTitle true`.

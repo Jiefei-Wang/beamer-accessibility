@@ -1,0 +1,58 @@
+\documentclass[14pt,t,lang=en-US]{beamer-accessibility}
+\usepackage{graphicx}
+\usepackage{listings}
+\usetheme{Madrid}
+
+\title{Accessible Beamer Presentation}
+\subtitle{Standard-Compliant Tagged PDF Generation}
+\author{Applied Biostatistics Research Team}
+\date{Fall 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}{Multi-Column Layout and Structural Hierarchy}
+Introductory remarks setting up the statistical problem.
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{block}{Methodology}
+\begin{enumerate}
+\item Sample cohort extraction
+  \begin{itemize}
+  \item Inclusion criteria: adults $\ge 18$
+  \item Exclusion: missing BMI data
+  \end{itemize}
+\item Regression model estimation:
+  \[
+  \mathrm{logit}(p) = \beta_0 + \beta_1 X
+  \]
+\end{enumerate}
+\end{block}
+\end{column}
+
+\begin{column}{0.48\textwidth}
+\begin{alertblock}{Clinical Finding\footnote{Published in Journal of Biostatistics, 2026.}}
+Significant association between baseline obesity and endpoint incidence ($p < 0.001$).
+\end{alertblock}
+\end{column}
+\end{columns}
+
+Concluding remarks summarizing next steps in the analysis pipeline.
+\end{frame}
+
+\begin{frame}[fragile]{SAS Code Implementation}
+\begin{block}{Model Syntax}
+Code implementation using standard SAS procedures:
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+proc logistic data=cohort;
+  model outcome(event='1') = exposure age;
+run;
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+\end{document}
