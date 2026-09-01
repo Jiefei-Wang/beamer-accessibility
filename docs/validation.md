@@ -9,7 +9,7 @@ Validated on 2026-09-01 with:
 - PDF management 0.97c
 - Poppler rendering at 300 DPI in RGB
 
-## Isolated tests (25 Fixture Suites)
+## Isolated tests (30 Fixture Suites)
 
 - `frame-paragraph`: Frame, title, and body paragraph tagging: PASS (0 differing pixels)
 - `package-only`: Standalone package loading after `\documentclass{beamer}`: PASS (0 differing pixels)
@@ -34,6 +34,11 @@ Validated on 2026-09-01 with:
 - `block-with-list`: Block containing nested `enumerate` and `itemize`: PASS (0 differing pixels)
 - `untitled-block`: Untitled block (`\begin{block}{}`) omitting `blocktitle` cleanly: PASS (0 differing pixels)
 - `mixed-blocks-prose`: Prose before, between, and after multiple blocks: PASS (0 differing pixels)
+- `basic-image`: Standalone `\includegraphics[alt={...}]{...}` with `/Figure` and `/Alt`: PASS (0 differing pixels)
+- `image-without-alt`: Standalone `\includegraphics` without `alt` attribute: PASS (0 differing pixels)
+- `inline-image`: Inline graphic inside paragraph text: PASS (0 differing pixels)
+- `block-with-image`: Graphic with alternative text inside a Beamer `block`: PASS (0 differing pixels)
+- `figure-environment`: `\begin{figure}` with `\caption`: PASS (0 differing pixels)
 - `unsupported-list`: Unsupported description fallback: PASS (0 differing pixels)
 - `unsupported-overlay-list`: Multi-slide overlay list fallback: PASS (0 differing pixels)
 
@@ -45,8 +50,7 @@ The package was installed in the MiKTeX user tree and loaded from there by the 2
 
 - `pdfinfo`: `Tagged: yes`
 - Pages: 23
-- Structure counts: 23 `frame`, 22 `frametitle`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (455 total structure objects)
-- Marked Content References: 246 total, 246 unique (0 duplicate MCIDs)
+- Structure counts: 23 `frame`, 22 `frametitle`, 2 `Figure`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (457 total structure objects)
 - Text match: 100% exact text match across all 23 pages
 - Visual comparison: **0 differing pixels across all 23 pages at 300 DPI (23/23 exact match)**
 

@@ -1,0 +1,18 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usepackage{graphicx}
+\usetheme{Boadilla}
+\makeatletter
+\define@key{Gin}{alt}{}
+\define@key{Gin}{alttext}{}
+\makeatother
+
+\begin{document}
+\begin{frame}{Basic Image Baseline}
+Introductory paragraph before image.
+
+\includegraphics[alt={A chart showing distribution of variables},width=4cm]{example-image}
+
+Concluding paragraph after image.
+\end{frame}
+\end{document}

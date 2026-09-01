@@ -128,6 +128,40 @@ def check_block_structure(frame_node: dict, expected_block_count: int, expected_
                 raise AssertionError(f"Block {i} expected no /blocktitle, got {blk_tags}")
 
 
+def check_figure_structure(frame_node: dict, expected_fig_count: int, expected_alts: list[str | None] | None = None) -> None:
+    """Verifies that /Figure is present in the frame structure with expected Alt attributes."""
+    roles: Counter[str] = Counter()
+    mcrs: list[tuple[int, str]] = []
+    collect(frame_node, roles, mcrs)
+    if roles.get("/Figure", 0) != expected_fig_count:
+        raise AssertionError(f"Expected {expected_fig_count} /Figure, got {roles.get('/Figure', 0)}")
+
+    figures: list[dict] = []
+
+    def find_figs(node):
+        node = object_value(node)
+        if isinstance(node, dict):
+            if str(node.get("/S")) == "/Figure":
+                figures.append(node)
+            for k in children(node):
+                find_figs(k)
+
+    find_figs(frame_node)
+
+    if len(figures) != expected_fig_count:
+        raise AssertionError(f"Expected {expected_fig_count} figure nodes, got {len(figures)}")
+
+    if expected_alts is not None:
+        for i, (fig, exp_alt) in enumerate(zip(figures, expected_alts)):
+            act_alt = fig.get("/Alt")
+            if exp_alt is None:
+                if act_alt is not None and str(act_alt).strip() != "":
+                    raise AssertionError(f"Figure {i} expected no Alt, got {act_alt!r}")
+            else:
+                if act_alt is None or str(act_alt) != exp_alt:
+                    raise AssertionError(f"Figure {i} expected Alt={exp_alt!r}, got {act_alt!r}")
+
+
 def render(pdf_path: Path, destination: Path) -> list[Path]:
     if destination.exists():
         shutil.rmtree(destination)
@@ -340,6 +374,42 @@ def main() -> None:
             frame_children=["/frametitle", "/P", "/block", "/P", "/block", "/P"],
             baseline="mixed-blocks-prose-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=2),
+        ),
+        # Graphics and alternative text fixtures (v0.7)
+        FixtureSpec(
+            name="basic-image-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/Figure": 1}),
+            frame_children=["/frametitle", "/P", "/P", "/P"],
+            baseline="basic-image-baseline",
+            tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["A chart showing distribution of variables"]),
+        ),
+        FixtureSpec(
+            name="image-without-alt-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/Figure": 1}),
+            frame_children=["/frametitle", "/P", "/P", "/P"],
+            baseline="image-without-alt-baseline",
+            tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=[None]),
+        ),
+        FixtureSpec(
+            name="inline-image-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 1, "/Figure": 1}),
+            frame_children=["/frametitle", "/P"],
+            baseline="inline-image-baseline",
+            tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["Inline icon thumbnail"]),
+        ),
+        FixtureSpec(
+            name="block-with-image-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 3, "/Figure": 1}),
+            frame_children=["/frametitle", "/block"],
+            baseline="block-with-image-baseline",
+            tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["Statistical flow chart"]),
+        ),
+        FixtureSpec(
+            name="figure-environment-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/Figure": 1}),
+            frame_children=["/frametitle", "/P", "/P", "/P"],
+            baseline="figure-environment-baseline",
+            tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["Distribution of participants by study cohort"]),
         ),
         # Unsupported fallback fixtures
         FixtureSpec(

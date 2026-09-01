@@ -1,0 +1,20 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usepackage{graphicx}
+\usetheme{Boadilla}
+\makeatletter
+\define@key{Gin}{alt}{}
+\define@key{Gin}{alttext}{}
+\makeatother
+
+\begin{document}
+\begin{frame}{Block With Image}
+\begin{block}{Visual Model Summary}
+Introductory paragraph inside block.
+
+\includegraphics[alt={Statistical flow chart},width=3.5cm]{example-image-b}
+
+Concluding notes inside block.
+\end{block}
+\end{frame}
+\end{document}

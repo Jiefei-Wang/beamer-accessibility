@@ -2,7 +2,7 @@
 
 Experimental low-level accessibility support for Beamer that preserves Beamer's visual implementation and ordinary frame syntax.
 
-The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, and Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
+The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks), and graphics with author-provided alternative text (`\includegraphics[alt={...}]{...}` and `figure` environments). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
 
 ## Requirements
 
@@ -19,14 +19,17 @@ The wrapper class initializes PDF management early and then loads upstream Beame
 
 ```latex
 \documentclass[14pt,t]{beamer-accessibility}
+\usepackage{graphicx}
 \usetheme{Boadilla}
 
 \begin{document}
-\begin{frame}{Block and List Overview}
+\begin{frame}{Block and Graphics Overview}
 Introductory paragraph before the block.
 
 \begin{block}{Important Milestone}
 Paragraph inside the block.
+
+\includegraphics[alt={Chart showing data distribution across cohorts},width=4cm]{example-image}
 
 \begin{enumerate}
 \item First numbered milestone with \textbf{bold} text.
@@ -51,10 +54,15 @@ Package-only use is also supported when PDF management is selected before Beamer
 ```latex
 \RequirePackage{pdfmanagement}
 \documentclass[14pt,t]{beamer}
+\usepackage{graphicx}
 \usepackage{beamer-accessibility}
 ```
 
-No commands are required in frame bodies.
+No commands are required in frame bodies. Authors provide accessible descriptions directly in standard `\includegraphics` calls using the `alt` or `alttext` key:
+
+```latex
+\includegraphics[alt={Bar chart showing distribution of obesity rates by state},width=0.8\linewidth]{chart.png}
+```
 
 ## Supported semantic structures
 
@@ -66,6 +74,7 @@ Document
     block (role-mapped to Div)
       blocktitle (role-mapped to H2)
       P
+        Figure [Alt: "Description of image"]
       L
         LI
           Lbl
@@ -80,17 +89,18 @@ Document
 ```
 
 - **Frame Titles:** The title is placed before body paragraphs in semantic order (`firstkid=true`) even though Beamer constructs its title box after processing the frame body.
+- **Graphics & Alternative Text (`Figure`):** Intercepts `\includegraphics` to emit `/Figure` structure elements containing leaf marked content and `/Alt` attributes when provided via `alt` or `alttext` keys. Supports standalone graphics, inline graphics in prose, and graphics inside `block` and `figure` environments.
 - **Blocks (`block`, `alertblock`, `exampleblock`):** Emits compliant `block -> (blocktitle, P ..., L ...)` structure mapped to `Div` and `H2`. Untitled blocks omit `blocktitle` cleanly.
 - **Lists (`itemize` & `enumerate`):** Emits compliant `L -> LI -> (Lbl, LBody -> (P, L ...))` hierarchies for single-level and nested lists up to 3 levels deep (`itemize item/subitem/subsubitem`, `enumerate item/subitem/subsubitem`, and arbitrary mixed nestings).
-- **Transitions:** Seamless paragraph open/close boundaries before, after, and within blocks and list items.
+- **Transitions:** Seamless paragraph open/close boundaries before, after, and within blocks, graphics, and list items.
 - **Visual & Text Identity:** Tagged output is guaranteed to have **0 differing pixels at 300 DPI** against untagged baseline and identical extracted text.
 
 ## Unsupported constructs & graceful fallback
 
-In v0.6:
+In v0.7:
 - Items with explicit overlay specifications (`\item<1->`, `\item<2->`) fall back cleanly to untagged presentation.
 - `description` environments fall back cleanly to untagged presentation.
-- Tables, columns, math, figures, graphics, and notes are scheduled for subsequent milestones.
+- Tables, multi-column layouts, math tagging, and notes are scheduled for subsequent milestones.
 
 This project does not yet claim PDF/UA conformance.
 

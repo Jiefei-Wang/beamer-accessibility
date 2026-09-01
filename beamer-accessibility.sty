@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.6 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/09/01 v0.7 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -47,6 +47,10 @@
 \bool_new:N \g__ba_block_open_bool
 \bool_new:N \g__ba_in_block_title_bool
 \bool_new:N \g__ba_block_title_open_bool
+
+% Graphics structure state:
+\bool_new:N \g__ba_graphics_struct_bool
+\tl_new:N   \g__ba_graphics_alt_tl
 
 \cs_new_protected:Npn \ba_body_begin:
   {
@@ -149,6 +153,57 @@
     \bool_gset_false:N \g__ba_in_block_title_bool
   }
 
+\cs_new_protected:Npn \ba_graphics_set_alt:n #1
+  {
+    \tl_gset:Nn \g__ba_graphics_alt_tl { #1 }
+  }
+
+\cs_new_protected:Npn \ba_graphics_clear_alt:
+  {
+    \tl_gclear:N \g__ba_graphics_alt_tl
+  }
+
+\cs_new_protected:Npn \ba_graphics_begin:
+  {
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_if:NT \g__ba_body_active_bool
+          {
+            \bool_if:NF \g__ba_frame_unsupported_bool
+              {
+                \bool_if:NT \g__ba_para_open_bool
+                  {
+                    \tag_mc_end:
+                  }
+                \tl_if_empty:NTF \g__ba_graphics_alt_tl
+                  {
+                    \tag_struct_begin:n { tag = Figure }
+                  }
+                  {
+                    \tag_struct_begin:n { tag = Figure, alt = {\g__ba_graphics_alt_tl} }
+                  }
+                \tag_mc_begin:n { }
+                \bool_gset_true:N \g__ba_graphics_struct_bool
+              }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_graphics_end:
+  {
+    \bool_if:NT \g__ba_graphics_struct_bool
+      {
+        \tag_mc_end:
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_graphics_struct_bool
+        \bool_if:NT \g__ba_para_open_bool
+          {
+            \tag_mc_begin:n { }
+          }
+      }
+    \tl_gclear:N \g__ba_graphics_alt_tl
+  }
+
 \cs_new_protected:Npn \ba_list_close_item_at:n #1
   {
     \ba_paragraph_end:
@@ -205,6 +260,8 @@
         \bool_gset_false:N \g__ba_block_open_bool
         \bool_gset_false:N \g__ba_in_block_title_bool
         \bool_gset_false:N \g__ba_block_title_open_bool
+        \bool_gset_false:N \g__ba_graphics_struct_bool
+        \tl_gclear:N \g__ba_graphics_alt_tl
       }
   }
 
@@ -401,9 +458,21 @@
     {\csname ba_block_end:\endcsname}%
 }
 
-% Precise frame body boundary: Beamer evaluates frame preamble setup before
-% checkframetitle; the user-authored frame body begins immediately after.
 \makeatletter
+% Graphics alt text and structural tagging:
+\define@key{Gin}{alt}{\csname ba_graphics_set_alt:n\endcsname{#1}}
+\define@key{Gin}{alttext}{\csname ba_graphics_set_alt:n\endcsname{#1}}
+
+\let\ba@orig@Gin@ii\Gin@ii
+\def\Gin@ii[#1]#2{%
+  \begingroup
+  \setkeys{Gin}{#1}%
+  \csname ba_graphics_begin:\endcsname
+  \ba@orig@Gin@ii[#1]{#2}%
+  \csname ba_graphics_end:\endcsname
+  \endgroup
+}
+
 \let\ba@orig@beamer@checkframetitle\beamer@checkframetitle
 \def\beamer@checkframetitle{\@ifnextchar\bgroup\ba@inlineframetitle{\csname ba_body_begin:\endcsname}}
 \def\ba@inlineframetitle#1{%

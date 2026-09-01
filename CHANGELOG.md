@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7 — 2026-09-01
+
+- Add automatic semantic tagging for graphics and figures (`\includegraphics`, `figure` environment).
+- Support author-provided alternative text via `alt` and `alttext` keys on `\includegraphics[alt={...}, ...]{...}`, generating `/Figure` structure elements with standard PDF `/Alt` attributes.
+- Wrap `\Gin@ii` from `graphicx` cleanly, preserving all standard graphics options (`width`, `height`, `scale`, `trim`, `clip`, `keepaspectratio`, etc.) with zero visual perturbation.
+- Implement paragraph marked-content pausing and resuming around inline and standalone graphics, producing compliant structure nesting without splitting paragraph boxes.
+- Support standalone graphics, inline graphics embedded inside prose, graphics inside Beamer `block` environments, and `figure` environments with `\caption`.
+- Expand test harness to 30 isolated fixture suites verifying `/Figure` tags, `/Alt` attributes, unique `(MCID, Pg)` tuples, exact text extraction, and 300-DPI zero-pixel visual regressions.
+- Validate on full 23-page real lecture integration deck (`lecture 1.pdf`) tagging 2 figures, 12 blocks, 12 block titles, 20 lists, and 76 items across 457 structure objects with zero pixel differences.
+
 ## 0.6 — 2026-09-01
 
 - Add automatic semantic tagging for Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks).
