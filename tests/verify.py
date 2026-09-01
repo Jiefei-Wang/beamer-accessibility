@@ -49,6 +49,7 @@ def inspect_tree(
     expected_roles: Counter[str],
     expected_frame_children: list[str] | None = None,
     tree_checker: Callable[[dict], None] | None = None,
+    expected_lang: str | None = "en-US",
 ) -> None:
     reader = PdfReader(pdf_path)
     root = object_value(reader.trailer["/Root"])
@@ -58,6 +59,16 @@ def inspect_tree(
     document = object_value(structure_root["/K"])
     if str(document.get("/S")) != "/Document":
         raise AssertionError(f"{pdf_path.name}: root child is not Document")
+
+    if expected_lang is not None:
+        lang = root.get("/Lang")
+        if lang != expected_lang:
+            raise AssertionError(f"{pdf_path.name}: Catalog /Lang is {lang!r}, expected {expected_lang!r}")
+
+    viewer_prefs = object_value(root.get("/ViewerPreferences"))
+    if viewer_prefs is not None:
+        if viewer_prefs.get("/DisplayDocTitle") != True:
+            raise AssertionError(f"{pdf_path.name}: ViewerPreferences /DisplayDocTitle is not True")
 
     roles: Counter[str] = Counter()
     mcrs: list[tuple[int, str]] = []
@@ -217,6 +228,7 @@ class FixtureSpec:
     tree_checker: Callable[[dict], None] | None = None
     check_pixels: bool = True
     check_text: bool = True
+    expected_lang: str | None = "en-US"
 
 
 def main() -> None:
@@ -299,14 +311,16 @@ def main() -> None:
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 4}),
             frame_children=["/frametitle", "/L"],
             baseline="nested-itemize-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=2),
         ),
         FixtureSpec(
             name="nested-itemize-3level-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 3, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
             frame_children=["/frametitle", "/L"],
             baseline="nested-itemize-3level-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=1),
         ),
-        # Enumerate and mixed nesting fixtures (v0.5)
+        # Enumerate fixtures (v0.5)
         FixtureSpec(
             name="basic-enumerate-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
@@ -319,6 +333,7 @@ def main() -> None:
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 4}),
             frame_children=["/frametitle", "/L"],
             baseline="nested-enumerate-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=2),
         ),
         FixtureSpec(
             name="mixed-itemize-enumerate-tagged",
@@ -340,45 +355,45 @@ def main() -> None:
             baseline="enumerate-multi-para-baseline",
             tree_checker=lambda f: check_list_structure(f, expected_item_count=2, expected_body_p_counts=[2, 1]),
         ),
-        # Block environments fixtures (v0.6)
+        # Block environments (v0.6)
         FixtureSpec(
             name="basic-block-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1, "/blocktitle": 1}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 3}),
             frame_children=["/frametitle", "/P", "/block", "/P"],
             baseline="basic-block-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
         FixtureSpec(
             name="alert-and-example-block-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 2, "/block": 2, "/blocktitle": 2}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 2, "/blocktitle": 2, "/P": 2}),
             frame_children=["/frametitle", "/block", "/block"],
             baseline="alert-and-example-block-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=2),
         ),
         FixtureSpec(
             name="multi-para-block-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1, "/blocktitle": 1}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 3}),
             frame_children=["/frametitle", "/block"],
             baseline="multi-para-block-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
         FixtureSpec(
             name="block-with-list-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 5, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 5}),
             frame_children=["/frametitle", "/block"],
             baseline="block-with-list-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
         FixtureSpec(
             name="untitled-block-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/P": 3}),
             frame_children=["/frametitle", "/P", "/block", "/P"],
             baseline="untitled-block-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1, expected_has_titles=[False]),
         ),
         FixtureSpec(
             name="mixed-blocks-prose-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 5, "/block": 2, "/blocktitle": 2}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 2, "/blocktitle": 2, "/P": 5}),
             frame_children=["/frametitle", "/P", "/block", "/P", "/block", "/P"],
             baseline="mixed-blocks-prose-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=2),
@@ -462,6 +477,35 @@ def main() -> None:
             baseline="theme-warsaw-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
+        # Hardening, Math, Code & Metadata fixtures (v0.9)
+        FixtureSpec(
+            name="math-inline-display-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 3}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="math-inline-display-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="fragile-listing-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 5}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="fragile-listing-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="footnote-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 5}),
+            frame_children=["/frametitle", "/P", "/P", "/block", "/P"],
+            baseline="footnote-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="custom-lang-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 1}),
+            frame_children=["/frametitle", "/P"],
+            baseline="custom-lang-baseline",
+            expected_lang="en-GB",
+        ),
         # Unsupported fallback fixtures
         FixtureSpec(
             name="unsupported-list-tagged",
@@ -482,7 +526,7 @@ def main() -> None:
         if not tagged_pdf.exists():
             raise FileNotFoundError(f"Missing PDF: {tagged_pdf}")
 
-        inspect_tree(tagged_pdf, spec.roles, spec.frame_children, spec.tree_checker)
+        inspect_tree(tagged_pdf, spec.roles, spec.frame_children, spec.tree_checker, spec.expected_lang)
 
         if spec.baseline:
             baseline_pdf = build / f"{spec.baseline}.pdf"

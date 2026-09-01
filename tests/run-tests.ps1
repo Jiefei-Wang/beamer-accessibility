@@ -21,6 +21,8 @@ try {
     }
     & python (Join-Path $repoRoot "tests/verify.py") $buildRoot
     if ($LASTEXITCODE -ne 0) { throw "PDF verification failed" }
+    & python (Join-Path $repoRoot "tests/verify_at.py") $buildRoot
+    if ($LASTEXITCODE -ne 0) { throw "AT accessibility validation failed" }
 }
 finally {
     Pop-Location

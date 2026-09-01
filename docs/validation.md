@@ -9,7 +9,7 @@ Validated on 2026-09-01 with:
 - PDF management 0.97c
 - Poppler rendering at 300 DPI in RGB
 
-## Isolated tests (36 Fixture Suites)
+## Isolated tests (40 Fixture Suites)
 
 - `frame-paragraph`: Frame, title, and body paragraph tagging: PASS (0 differing pixels)
 - `package-only`: Standalone package loading after `\documentclass{beamer}`: PASS (0 differing pixels)
@@ -45,10 +45,25 @@ Validated on 2026-09-01 with:
 - `columns-mixed-composition`: Multi-column slide with blocks, nested lists, and figures with alt text: PASS (0 differing pixels)
 - `theme-madrid`: Full slide presentation under Madrid theme: PASS (0 differing pixels)
 - `theme-warsaw`: Full slide presentation under Warsaw theme: PASS (0 differing pixels)
+- `math-inline-display`: Inline regression math and display math equations inside blocks: PASS (0 differing pixels)
+- `fragile-listing`: Verbatim code blocks and syntax highlighting via `listings` on fragile slides: PASS (0 differing pixels)
+- `footnote`: Reference footnotes in prose and inside blocks with stream MC balance: PASS (0 differing pixels)
+- `custom-lang`: Document language customization via `lang=en-GB`: PASS (0 differing pixels)
 - `unsupported-list`: Unsupported description fallback: PASS (0 differing pixels)
 - `unsupported-overlay-list`: Multi-slide overlay list fallback: PASS (0 differing pixels)
 
-Run these checks with `tests/run-tests.ps1` or `python tests/verify.py build/tests`.
+Run these checks with `tests/run-tests.ps1` (which runs both `tests/verify.py` and `tests/verify_at.py`).
+
+## Assistive Technology (AT) Validation
+
+Automated validation via `tests/verify_at.py`:
+- Document Catalog `/Lang` attribute present and matches document configuration: PASS (40/40)
+- Document Catalog `/ViewerPreferences` has `/DisplayDocTitle true`: PASS (40/40)
+- Structure Tree has valid single `/Document` root: PASS (40/40)
+- RoleMap mappings present for `frame` (`Sect`), `frametitle` (`H1`), `block` (`Div`), `blocktitle` (`H2`), and `column` (`Div`): PASS (40/40)
+- Author-provided alternative text emitted in `/Figure` `/Alt` attributes: PASS (40/40)
+- PDF/UA list grammar (`L` -> `LI` -> `Lbl` + `LBody` -> `P` / `L`): PASS (40/40)
+- Leaf MCR uniqueness and page validity: PASS (40/40)
 
 ## Theme Compatibility Matrix
 
@@ -69,10 +84,12 @@ Verified across 10 diverse presentation themes with zero pixel differences at 30
 The package was installed in the MiKTeX user tree and loaded from there by the 23-page BIOS 6485 Lecture 1 integration deck.
 
 - `pdfinfo`: `Tagged: yes`
+- Document Catalog: `/Lang (en-US)`, `/ViewerPreferences << /DisplayDocTitle true >>`
 - Pages: 23
-- Structure counts: 23 `frame`, 22 `frametitle`, 12 `column`, 2 `Figure`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (485 total structure objects)
+- Structure counts: 23 `frame`, 22 `frametitle`, 12 `column`, 2 `Figure`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (250 unique MCIDs across 485 total structure objects)
 - Text match: 100% exact text match across all 23 pages
 - Visual comparison: **0 differing pixels across all 23 pages at 300 DPI (23/23 exact match)**
+- AT Accessibility Validation: **0 errors**
 
 No PDF/UA conformance claim is made.
 

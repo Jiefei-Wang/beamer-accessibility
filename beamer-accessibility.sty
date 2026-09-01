@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/09/01 v0.8 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/09/01 v0.9 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -7,6 +7,24 @@
 \RequirePackage{tagpdf}
 
 \ExplSyntaxOn
+\tl_new:N \g__ba_lang_tl
+\tl_gset:Nn \g__ba_lang_tl { en-US }
+
+\keys_define:nn { beamer-accessibility }
+  {
+    lang .tl_gset:N = \g__ba_lang_tl,
+    lang .initial:n = { en-US },
+    unknown .code:n = {},
+  }
+
+\ProcessKeyOptions [ beamer-accessibility ]
+
+\AddToHook{begindocument/before}
+  {
+    \pdfmanagement_add:nnn { Catalog } { Lang } { (\g__ba_lang_tl) }
+    \pdfmanagement_add:nnn { Catalog } { ViewerPreferences } { << /DisplayDocTitle ~ true >> }
+  }
+
 \tagpdfsetup
   {
     activate-all,
@@ -69,6 +87,7 @@
 
 \cs_new_protected:Npn \ba_paragraph_begin:
   {
+    \ba_paragraph_end:
     \bool_if:NT \g__ba_frame_active_bool
       {
         \bool_if:NT \g__ba_body_active_bool
@@ -329,7 +348,6 @@
 
 \cs_new_protected:Npn \ba_frametitle_begin:
   {
-    \ba_body_end:
     \bool_if:NT \g__ba_frame_active_bool
       {
         \bool_gset_true:N \g__ba_in_title_bool
@@ -453,7 +471,7 @@
 
 % Ordinary prose is tagged only while a rendered Beamer slide body is active.
 \AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
-\AddToHook{para/end}{\csname ba_paragraph_end:\endcsname}
+%
 
 % List support for itemize and enumerate across nesting levels 1, 2, and 3:
 \AddToHook{env/itemize/begin}{\csname ba_list_begin:\endcsname}
@@ -561,11 +579,52 @@
   \csname ba_suppress_begin:\endcsname%
   \ba@orig@beamer@parseitem<#1>%
 }
+
+% Footnote support: wrap footnote text handlers to maintain stream MC balance.
+\let\ba@orig@framefootnotetext\beamer@framefootnotetext
+\renewcommand<>\beamer@framefootnotetext[1]{%
+  \csname ba_paragraph_end:\endcsname
+  \global\setbox\beamer@footins\vbox{%
+    \hsize\framewidth
+    \textwidth\hsize
+    \columnwidth\hsize
+    \unvbox\beamer@footins
+    \reset@font\footnotesize
+    \@parboxrestore
+    \protected@edef\@currentlabel
+         {\csname p@footnote\endcsname\@thefnmark}%
+    \color@begingroup
+      \uncover#2{\@makefntext{%
+        \rule\z@\footnotesep\ignorespaces#1\@finalstrut\strutbox}}%
+    \color@endgroup
+    \csname ba_paragraph_end:\endcsname}%
+}
+\let\@footnotetext=\beamer@framefootnotetext
+\let\ba@orig@mpfootnotetext\@mpfootnotetext
+\renewcommand<>\@mpfootnotetext[1]{%
+  \csname ba_paragraph_end:\endcsname
+  \global\setbox\@mpfootins\vbox{%
+    \unvbox\@mpfootins
+    \reset@font\footnotesize
+    \hsize\columnwidth
+    \@parboxrestore
+    \protected@edef\@currentlabel
+         {\csname p@mpfootnote\endcsname\@thefnmark}%
+    \color@begingroup
+      \uncover#2{\@makefntext{%
+        \rule\z@\footnotesep\ignorespaces#1\@finalstrut\strutbox}}%
+    \color@endgroup
+    \csname ba_paragraph_end:\endcsname}%
+}
+
 \makeatother
 
 % Description lists remain unsupported in v0.5 and fall back cleanly.
 \AddToHook{env/description/begin}{\csname ba_suppress_begin:\endcsname}
 \AddToHook{env/description/end}{\csname ba_suppress_end:\endcsname}
+
+% beamer@framepauses surrounds the slide body contents.
+\AddToHook{env/beamer@framepauses/end}{\csname ba_body_end:\endcsname}
 
 % beamer@frameslide surrounds one rendered slide. The /after hook closes the
 % structure only after Beamer has constructed the title and output boxes.

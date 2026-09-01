@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9 — 2026-09-01
+
+- Add Document Catalog metadata tagging: inject standard `/Lang` attribute and `/ViewerPreferences` dictionary with `/DisplayDocTitle true`.
+- Implement configurable document language support via `lang` class and package option (e.g., `\documentclass[lang=en-GB]{beamer-accessibility}`), defaulting to `en-US`.
+- Implement `unknown` option handler via `l3keys` and pass unrecognized options directly to the underlying `beamer` class without LaTeX package option errors.
+- Edge-case hardening:
+  - Preserve inline math `$x$` and display math equations `\[ ... \]` without disruptive vertical whatsits or display spacing perturbations.
+  - Preserve verbatim/code listings (`listings` package and `[fragile]` frames) with clean structure elements.
+  - Wrap Beamer's `\beamer@framefootnotetext` and `\@mpfootnotetext` to maintain marked content stream balance across slide body and footnote insert boxes.
+- Create automated Assistive Technology validator (`tests/verify_at.py`) validating Catalog metadata (`/Lang`, `/ViewerPreferences`), `/StructTreeRoot`, RoleMap mappings, `/Figure` `/Alt` attributes, PDF/UA list grammar, and leaf MCR uniqueness.
+- Expand test harness to 40 isolated fixture suites (80 `.tex` files) verifying 100% exact text extraction, structure assertions, AT validation, and 300-DPI zero-pixel visual regressions.
+- Validate on full 23-page real lecture integration deck (`lecture 1.pdf`) tagging 250 unique MCIDs across 485 structure objects with zero pixel differences and zero AT errors.
+
 ## 0.8 — 2026-09-01
 
 - Add automatic semantic tagging for multi-column slide layouts (`columns`, `column` environments, and `\column` command).

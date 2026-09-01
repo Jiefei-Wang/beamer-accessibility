@@ -1,0 +1,20 @@
+\documentclass[14pt,t]{beamer-accessibility}
+\usepackage{graphicx}
+\usepackage{listings}
+\usetheme{Boadilla}
+
+\begin{document}
+\begin{frame}[fragile]{Statistical Software Code}
+Introductory remarks before SAS listing.
+
+\begin{block}{SAS Procedure Specification}
+\begin{lstlisting}[language=SAS,basicstyle=\ttfamily\footnotesize]
+proc reg data=clinical_trial;
+   model blood_pressure = dose age;
+run;
+\end{lstlisting}
+\end{block}
+
+Concluding remarks after SAS listing.
+\end{frame}
+\end{document}
