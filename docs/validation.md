@@ -1,6 +1,6 @@
 # Validation record
 
-Validated on 2026-08-31 with:
+Validated on 2026-09-01 with:
 
 - MiKTeX 26.5
 - LaTeX 2026-06-01 and L3 2026-08-10
@@ -9,7 +9,7 @@ Validated on 2026-08-31 with:
 - PDF management 0.97c
 - Poppler rendering at 300 DPI in RGB
 
-## Isolated tests (19 Fixture Suites)
+## Isolated tests (25 Fixture Suites)
 
 - `frame-paragraph`: Frame, title, and body paragraph tagging: PASS (0 differing pixels)
 - `package-only`: Standalone package loading after `\documentclass{beamer}`: PASS (0 differing pixels)
@@ -28,6 +28,12 @@ Validated on 2026-08-31 with:
 - `mixed-itemize-enumerate`: Enumerate inside itemize & itemize inside enumerate: PASS (0 differing pixels)
 - `enumerate-inline-formatting`: Enumerate items with `\textbf`, `\alert`, math: PASS (0 differing pixels)
 - `enumerate-multi-para`: Multi-paragraph enumerate items: PASS (0 differing pixels)
+- `basic-block`: Standard `block` with `blocktitle` and body prose: PASS (0 differing pixels)
+- `alert-and-example-block`: `alertblock` and `exampleblock` tagging: PASS (0 differing pixels)
+- `multi-para-block`: Multi-paragraph block body tagging: PASS (0 differing pixels)
+- `block-with-list`: Block containing nested `enumerate` and `itemize`: PASS (0 differing pixels)
+- `untitled-block`: Untitled block (`\begin{block}{}`) omitting `blocktitle` cleanly: PASS (0 differing pixels)
+- `mixed-blocks-prose`: Prose before, between, and after multiple blocks: PASS (0 differing pixels)
 - `unsupported-list`: Unsupported description fallback: PASS (0 differing pixels)
 - `unsupported-overlay-list`: Multi-slide overlay list fallback: PASS (0 differing pixels)
 
@@ -39,10 +45,10 @@ The package was installed in the MiKTeX user tree and loaded from there by the 2
 
 - `pdfinfo`: `Tagged: yes`
 - Pages: 23
-- Structure counts: 23 `frame`, 22 `frametitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 148 `P`
+- Structure counts: 23 `frame`, 22 `frametitle`, 12 `block`, 12 `blocktitle`, 20 `L`, 76 `LI`, 76 `Lbl`, 76 `LBody`, and 136 `P` (455 total structure objects)
 - Marked Content References: 246 total, 246 unique (0 duplicate MCIDs)
-- Text match: 100% exact text match
-- Visual comparison: 0 differing pixels on 22/23 pages; slide 20 line wrap difference due to authored content overflowing text width by 1.64pt.
+- Text match: 100% exact text match across all 23 pages
+- Visual comparison: **0 differing pixels across all 23 pages at 300 DPI (23/23 exact match)**
 
 No PDF/UA conformance claim is made.
 

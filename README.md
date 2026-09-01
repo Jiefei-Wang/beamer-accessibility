@@ -2,7 +2,7 @@
 
 Experimental low-level accessibility support for Beamer that preserves Beamer's visual implementation and ordinary frame syntax.
 
-The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), and mixed `itemize`/`enumerate` nesting. Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
+The current release automatically creates semantic structures for rendered frames, frame titles, ordinary paragraphs, single-level and nested `itemize` lists (up to 3 levels), `enumerate` lists (up to 3 levels), mixed `itemize`/`enumerate` nesting, and Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks). Unsupported constructs (such as item overlay specifications and description lists) continue to compile and render normally but fall back gracefully without emitting broken or partial tags.
 
 ## Requirements
 
@@ -22,21 +22,26 @@ The wrapper class initializes PDF management early and then loads upstream Beame
 \usetheme{Boadilla}
 
 \begin{document}
-\begin{frame}{Nested list overview}
-Introductory paragraph before the list.
+\begin{frame}{Block and List Overview}
+Introductory paragraph before the block.
+
+\begin{block}{Important Milestone}
+Paragraph inside the block.
 
 \begin{enumerate}
 \item First numbered milestone with \textbf{bold} text.
   \begin{itemize}
-  \item Nested bullet subitem A.
-  \item Nested bullet subitem B with multiple paragraphs.
-
-    Second paragraph within nested subitem.
+  \item Nested bullet subitem.
   \end{itemize}
 \item Second numbered milestone.
 \end{enumerate}
+\end{block}
 
-Summary paragraph after the list.
+\begin{alertblock}{Warning}
+Alert block text.
+\end{alertblock}
+
+Summary paragraph after blocks.
 \end{frame}
 \end{document}
 ```
@@ -58,29 +63,34 @@ Document
   frame (role-mapped to Sect)
     frametitle (role-mapped to H1)
     P
-    L
-      LI
-        Lbl
-        LBody
-          P
-          L (nested sublist)
-            LI
-              Lbl
-              LBody
-                P
+    block (role-mapped to Div)
+      blocktitle (role-mapped to H2)
+      P
+      L
+        LI
+          Lbl
+          LBody
+            P
+            L (nested sublist)
+              LI
+                Lbl
+                LBody
+                  P
+    P
 ```
 
 - **Frame Titles:** The title is placed before body paragraphs in semantic order (`firstkid=true`) even though Beamer constructs its title box after processing the frame body.
+- **Blocks (`block`, `alertblock`, `exampleblock`):** Emits compliant `block -> (blocktitle, P ..., L ...)` structure mapped to `Div` and `H2`. Untitled blocks omit `blocktitle` cleanly.
 - **Lists (`itemize` & `enumerate`):** Emits compliant `L -> LI -> (Lbl, LBody -> (P, L ...))` hierarchies for single-level and nested lists up to 3 levels deep (`itemize item/subitem/subsubitem`, `enumerate item/subitem/subsubitem`, and arbitrary mixed nestings).
-- **Transitions:** Seamless paragraph open/close boundaries before, after, and within list items.
+- **Transitions:** Seamless paragraph open/close boundaries before, after, and within blocks and list items.
 - **Visual & Text Identity:** Tagged output is guaranteed to have **0 differing pixels at 300 DPI** against untagged baseline and identical extracted text.
 
 ## Unsupported constructs & graceful fallback
 
-In v0.5:
+In v0.6:
 - Items with explicit overlay specifications (`\item<1->`, `\item<2->`) fall back cleanly to untagged presentation.
 - `description` environments fall back cleanly to untagged presentation.
-- Blocks, tables, columns, math, figures, graphics, and notes are scheduled for subsequent milestones.
+- Tables, columns, math, figures, graphics, and notes are scheduled for subsequent milestones.
 
 This project does not yet claim PDF/UA conformance.
 

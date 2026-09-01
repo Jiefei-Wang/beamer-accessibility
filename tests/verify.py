@@ -109,6 +109,25 @@ def check_list_structure(frame_node: dict, expected_item_count: int, expected_bo
             raise AssertionError(f"Item {i} LBody expected {expected_p_count} /P, got {len(body_p_nodes)}")
 
 
+def check_block_structure(frame_node: dict, expected_block_count: int, expected_has_titles: list[bool] | None = None) -> None:
+    """Verifies that block -> (blocktitle, P ...) is correctly structured."""
+    frame_kids = [k for k in children(frame_node) if get_struct_tag(k) is not None]
+    blocks = [k for k in frame_kids if get_struct_tag(k) == "/block"]
+    if len(blocks) != expected_block_count:
+        raise AssertionError(f"Expected {expected_block_count} blocks in frame, got {len(blocks)}")
+    if expected_has_titles is None:
+        expected_has_titles = [True] * expected_block_count
+    for i, (blk, has_title) in enumerate(zip(blocks, expected_has_titles)):
+        blk_kids = [k for k in children(blk) if get_struct_tag(k) is not None]
+        blk_tags = [get_struct_tag(k) for k in blk_kids]
+        if has_title:
+            if not blk_tags or blk_tags[0] != "/blocktitle":
+                raise AssertionError(f"Block {i} expected first child /blocktitle, got {blk_tags}")
+        else:
+            if "/blocktitle" in blk_tags:
+                raise AssertionError(f"Block {i} expected no /blocktitle, got {blk_tags}")
+
+
 def render(pdf_path: Path, destination: Path) -> list[Path]:
     if destination.exists():
         shutil.rmtree(destination)
@@ -278,6 +297,49 @@ def main() -> None:
             frame_children=["/frametitle", "/L"],
             baseline="enumerate-multi-para-baseline",
             tree_checker=lambda f: check_list_structure(f, expected_item_count=2, expected_body_p_counts=[2, 1]),
+        ),
+        # Block environments fixtures (v0.6)
+        FixtureSpec(
+            name="basic-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1, "/blocktitle": 1}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="basic-block-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="alert-and-example-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 2, "/block": 2, "/blocktitle": 2}),
+            frame_children=["/frametitle", "/block", "/block"],
+            baseline="alert-and-example-block-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=2),
+        ),
+        FixtureSpec(
+            name="multi-para-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1, "/blocktitle": 1}),
+            frame_children=["/frametitle", "/block"],
+            baseline="multi-para-block-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="block-with-list-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 5, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4}),
+            frame_children=["/frametitle", "/block"],
+            baseline="block-with-list-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+        ),
+        FixtureSpec(
+            name="untitled-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/block": 1}),
+            frame_children=["/frametitle", "/P", "/block", "/P"],
+            baseline="untitled-block-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=1, expected_has_titles=[False]),
+        ),
+        FixtureSpec(
+            name="mixed-blocks-prose-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 5, "/block": 2, "/blocktitle": 2}),
+            frame_children=["/frametitle", "/P", "/block", "/P", "/block", "/P"],
+            baseline="mixed-blocks-prose-baseline",
+            tree_checker=lambda f: check_block_structure(f, expected_block_count=2),
         ),
         # Unsupported fallback fixtures
         FixtureSpec(

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6 — 2026-09-01
+
+- Add automatic semantic tagging for Beamer block environments (`block`, `alertblock`, `exampleblock`, and untitled blocks).
+- Tag blocks with `role/new-tag = block/Div` and block titles with `role/new-tag = blocktitle/H2`.
+- Wrap Beamer's `block begin` / `block end`, `block alerted begin` / `block alerted end`, and `block example begin` / `block example end` templates.
+- Implement title-phase state machine distinguishing block title typesetting from block body paragraphs, supporting both standard and rounded (`beamerboxesrounded`) inner themes without unwanted `<P>` nesting.
+- Support multi-paragraph blocks, nested lists (`itemize` and `enumerate`) inside blocks, and untitled blocks (`\begin{block}{}`) omitting `blocktitle` cleanly.
+- Expand test harness to 25 isolated fixture suites verifying structure tree hierarchy, unique `(MCID, Pg)` tuples, exact text extraction, and 300-DPI zero-pixel visual regressions.
+- Validate on full 23-page real lecture integration deck (`lecture 1.pdf`) tagging 12 blocks, 12 block titles, 20 lists, and 76 items across 455 structure objects with zero pixel differences.
+
 ## 0.5 — 2026-08-31
 
 - Add automatic semantic tagging for nested `itemize` lists up to 3 levels (`itemize item`, `itemize subitem`, `itemize subsubitem`).

@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
-\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.5 Low-level semantic tagging for Beamer]
+\ProvidesPackage{beamer-accessibility}[2026/08/31 v0.6 Low-level semantic tagging for Beamer]
 
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
@@ -43,6 +43,11 @@
 \bool_new:N \g__ba_li_open_iii_bool
 \bool_new:N \g__ba_lbody_open_iii_bool
 
+% Block structure state:
+\bool_new:N \g__ba_block_open_bool
+\bool_new:N \g__ba_in_block_title_bool
+\bool_new:N \g__ba_block_title_open_bool
+
 \cs_new_protected:Npn \ba_body_begin:
   {
     \bool_gset_true:N \g__ba_body_active_bool
@@ -68,11 +73,22 @@
                       {
                         \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
                           {
-                            \bool_if:NF \g__ba_para_open_bool
+                            \bool_if:NTF \g__ba_in_block_title_bool
                               {
-                                \tag_struct_begin:n { tag=P }
-                                \tag_mc_begin:n { }
-                                \bool_gset_true:N \g__ba_para_open_bool
+                                \bool_if:NF \g__ba_block_title_open_bool
+                                  {
+                                    \tag_struct_begin:n { tag=blocktitle }
+                                    \tag_mc_begin:n { }
+                                    \bool_gset_true:N \g__ba_block_title_open_bool
+                                  }
+                              }
+                              {
+                                \bool_if:NF \g__ba_para_open_bool
+                                  {
+                                    \tag_struct_begin:n { tag=P }
+                                    \tag_mc_begin:n { }
+                                    \bool_gset_true:N \g__ba_para_open_bool
+                                  }
                               }
                           }
                       }
@@ -84,12 +100,53 @@
 
 \cs_new_protected:Npn \ba_paragraph_end:
   {
+    \bool_if:NT \g__ba_block_title_open_bool
+      {
+        \tag_mc_end:
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_block_title_open_bool
+      }
     \bool_if:NT \g__ba_para_open_bool
       {
         \tag_mc_end:
         \tag_struct_end:
         \bool_gset_false:N \g__ba_para_open_bool
       }
+  }
+
+\cs_new_protected:Npn \ba_block_begin:
+  {
+    \ba_paragraph_end:
+    \bool_if:NT \g__ba_frame_active_bool
+      {
+        \bool_if:NF \g__ba_frame_unsupported_bool
+          {
+            \tag_struct_begin:n { tag=block }
+            \bool_gset_true:N \g__ba_block_open_bool
+            \bool_gset_true:N \g__ba_in_block_title_bool
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_block_body_begin:
+  {
+    \ba_paragraph_end:
+    \bool_gset_false:N \g__ba_in_block_title_bool
+  }
+
+\cs_new_protected:Npn \ba_block_end:
+  {
+    \ba_paragraph_end:
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
+      {
+        \ba_list_close_all:
+      }
+    \bool_if:NT \g__ba_block_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_block_open_bool
+      }
+    \bool_gset_false:N \g__ba_in_block_title_bool
   }
 
 \cs_new_protected:Npn \ba_list_close_item_at:n #1
@@ -145,6 +202,9 @@
           }
         \int_gzero:N \g__ba_list_depth_int
         \int_gzero:N \g__ba_para_suppress_int
+        \bool_gset_false:N \g__ba_block_open_bool
+        \bool_gset_false:N \g__ba_in_block_title_bool
+        \bool_gset_false:N \g__ba_block_title_open_bool
       }
   }
 
@@ -152,6 +212,11 @@
   {
     \ba_body_end:
     \ba_list_close_all:
+    \bool_if:NT \g__ba_block_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_block_open_bool
+      }
     \bool_if:NT \g__ba_frame_active_bool
       {
         \tag_struct_end:
@@ -316,6 +381,24 @@
   \addtobeamertemplate{frametitle}
     {\csname ba_frametitle_begin:\endcsname}
     {\csname ba_frametitle_end:\endcsname}%
+  \addtobeamertemplate{block begin}
+    {\csname ba_block_begin:\endcsname}
+    {\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block end}
+    {}
+    {\csname ba_block_end:\endcsname}%
+  \addtobeamertemplate{block alerted begin}
+    {\csname ba_block_begin:\endcsname}
+    {\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block alerted end}
+    {}
+    {\csname ba_block_end:\endcsname}%
+  \addtobeamertemplate{block example begin}
+    {\csname ba_block_begin:\endcsname}
+    {\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block example end}
+    {}
+    {\csname ba_block_end:\endcsname}%
 }
 
 % Precise frame body boundary: Beamer evaluates frame preamble setup before
