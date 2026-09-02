@@ -506,12 +506,14 @@ def main() -> None:
             baseline="custom-lang-baseline",
             expected_lang="en-GB",
         ),
-        # Unsupported fallback fixtures
+        # Description list and overlay fixtures
         FixtureSpec(
             name="unsupported-list-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1}),
-            frame_children=["/frametitle"],
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 3}),
+            frame_children=["/frametitle", "/L", "/P"],
             baseline="unsupported-list-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=2),
+            check_pixels=False,
         ),
         FixtureSpec(
             name="unsupported-overlay-list-tagged",

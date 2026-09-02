@@ -148,31 +148,137 @@ def validate_pdf_accessibility(pdf_path: Path) -> dict:
     return report
 
 
+def get_page_content_bytes(page) -> bytes:
+    contents = page.get("/Contents")
+    if not contents:
+        return b""
+    obj = contents.get_object()
+    if isinstance(obj, list):
+        return b"\n".join(stream.get_object().get_data() for stream in obj)
+    elif hasattr(obj, "get_data"):
+        return obj.get_data()
+    return b""
+
+
+def validate_content_stream_coverage(pdf_path: Path) -> dict:
+    reader = PdfReader(pdf_path)
+    report = {
+        "file": pdf_path.name,
+        "total_text_ops": 0,
+        "tagged_text_ops": 0,
+        "artifact_text_ops": 0,
+        "unclassified_text_ops": 0,
+        "total_graphic_ops": 0,
+        "errors": [],
+    }
+
+    TEXT_OPS = {"Tj", "TJ", "'", '"'}
+    GRAPHIC_OPS = {"S", "s", "f", "F", "f*", "B", "B*", "b", "b*", "Do", "sh"}
+
+    for page_num, page in enumerate(reader.pages):
+        data = get_page_content_bytes(page).decode("latin1", errors="ignore")
+        if not data:
+            continue
+
+        tokens = []
+        for line in data.splitlines():
+            line = line.split("%")[0].strip()
+            if not line:
+                continue
+            for tok in line.split():
+                if tok:
+                    tokens.append(tok)
+
+        mc_stack = []
+        i = 0
+        while i < len(tokens):
+            tok = tokens[i]
+            if tok == "BMC":
+                tag = tokens[i - 1] if i > 0 else "Unknown"
+                mc_stack.append(tag)
+            elif tok == "BDC":
+                tag = tokens[i - 2] if i > 1 else "Unknown"
+                mc_stack.append(tag)
+            elif tok == "EMC":
+                if mc_stack:
+                    mc_stack.pop()
+            elif tok in TEXT_OPS:
+                report["total_text_ops"] += 1
+                if not mc_stack:
+                    report["unclassified_text_ops"] += 1
+                    report["errors"].append(f"Page {page_num + 1}: Unclassified text op '{tok}' outside marked content")
+                elif any("Artifact" in tag for tag in mc_stack):
+                    report["artifact_text_ops"] += 1
+                else:
+                    report["tagged_text_ops"] += 1
+            elif tok in GRAPHIC_OPS:
+                report["total_graphic_ops"] += 1
+            i += 1
+
+    return report
+
+
+def validate_link_annotations(pdf_path: Path) -> dict:
+    reader = PdfReader(pdf_path)
+    report = {
+        "file": pdf_path.name,
+        "total_links": 0,
+        "structured_links": 0,
+        "furniture_links": 0,
+        "errors": [],
+    }
+
+    for page_num, page in enumerate(reader.pages):
+        annots = page.get("/Annots", [])
+        for a_ref in annots:
+            annot = a_ref.get_object() if hasattr(a_ref, "get_object") else a_ref
+            if not isinstance(annot, dict):
+                continue
+            if annot.get("/Subtype") == "/Link":
+                report["total_links"] += 1
+                struct_parent = annot.get("/StructParent")
+
+                if struct_parent is not None:
+                    report["structured_links"] += 1
+                else:
+                    report["furniture_links"] += 1
+
+    return report
+
+
 def main() -> None:
     test_dir = Path(sys.argv[1] if len(sys.argv) > 1 else "build/tests").resolve()
     tagged_files = sorted(test_dir.glob("*-tagged.pdf"))
     if not tagged_files:
         tagged_files = sorted(test_dir.glob("*.pdf"))
 
-    print(f"Validating accessibility structure for {len(tagged_files)} PDFs in {test_dir.name}...")
+    print(f"Validating accessibility structure, content stream coverage, and link annotations for {len(tagged_files)} PDFs in {test_dir.name}...")
     failures = 0
     for pdf_file in tagged_files:
-        report = validate_pdf_accessibility(pdf_file)
-        if report["errors"]:
+        struct_report = validate_pdf_accessibility(pdf_file)
+        cs_report = validate_content_stream_coverage(pdf_file)
+        link_report = validate_link_annotations(pdf_file)
+
+        all_errors = struct_report["errors"] + cs_report["errors"] + link_report["errors"]
+        if all_errors:
             print(f"  [FAIL] {pdf_file.name}:")
-            for err in report["errors"]:
+            for err in all_errors:
                 print(f"    - {err}")
             failures += 1
         else:
-            lang_str = report["catalog_lang"] or "N/A"
-            structs_str = ", ".join(f"{k.lstrip('/')}:{v}" for k, v in sorted(report["structure_counts"].items()))
-            print(f"  [PASS] {pdf_file.name} (Lang={lang_str}, MCIDs={report['mcid_count']}, {structs_str})")
+            lang_str = struct_report["catalog_lang"] or "N/A"
+            structs_str = ", ".join(f"{k.lstrip('/')}:{v}" for k, v in sorted(struct_report["structure_counts"].items()))
+            print(
+                f"  [PASS] {pdf_file.name} (Lang={lang_str}, MCIDs={struct_report['mcid_count']}, "
+                f"TextOps: {cs_report['total_text_ops']} [tagged={cs_report['tagged_text_ops']}, artifact={cs_report['artifact_text_ops']}], "
+                f"Links: {link_report['total_links']} [struct={link_report['structured_links']}, furniture={link_report['furniture_links']}], {structs_str})"
+            )
 
     if failures > 0:
         print(f"\nFAILED: {failures} files had accessibility validation errors.")
         sys.exit(1)
     else:
-        print(f"\nSUCCESS: All {len(tagged_files)} files passed AT accessibility validation.")
+        print(f"\nSUCCESS: All {len(tagged_files)} files passed AT accessibility, content-stream coverage, and link validation.")
 
 
 if __name__ == "__main__":

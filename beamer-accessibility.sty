@@ -23,16 +23,80 @@
   {
     \pdfmanagement_add:nnn { Catalog } { Lang } { (\g__ba_lang_tl) }
     \pdfmanagement_add:nnn { Catalog } { ViewerPreferences } { << /DisplayDocTitle ~ true >> }
+    \tl_set:Nn \l__tag_name_link_tl { Link }
+    \bool_gset_true:N \l__tag_active_socket_bool
   }
 
 \tagpdfsetup
   {
-    activate-all,
-    role/new-tag = frame/Sect,
-    role/new-tag = frametitle/H1,
-    role/new-tag = block/Div,
-    role/new-tag = blocktitle/H2,
-    role/new-tag = column/Div
+    activate,
+    activate/socket = true,
+    activate/mc     = true,
+    activate/tree   = true,
+    activate/struct = true,
+    role/new-tag    = frame/Sect,
+    role/new-tag    = frametitle/H1,
+    role/new-tag    = block/Div,
+    role/new-tag    = blocktitle/H2,
+    role/new-tag    = column/Div,
+    role/new-tag    = Link/Link,
+  }
+
+% Define tagging socket plugs for links: only create structure inside active slide body
+\NewTaggingSocketPlug{link/before}{ba_link}
+  {
+    \bool_if:NTF \g__ba_body_active_bool
+      {
+        \mode_leave_vertical:
+        \tag_mc_end_push:
+        \tag_struct_begin:n { tag = \UseStructureName{link} }
+        \tag_mc_begin:n {}
+        #1
+      }
+      {
+        \pdfannot_dict_put:nne { link/GoTo } { Contents } { (Navigation) }
+        \pdfannot_dict_put:nne { link/Named } { Contents } { (Navigation) }
+        #1
+      }
+  }
+\AssignTaggingSocketPlug{link/before}{ba_link}
+
+\NewTaggingSocketPlug{link/after}{ba_link}
+  {
+    \bool_if:NTF \g__ba_body_active_bool
+      {
+        \tag_struct_insert_annot:ee
+          { \pdfannot_link_ref_last: }
+          { \tag_struct_parent_int: }
+        \tag_mc_end:
+        \tag_struct_end:
+        \tag_mc_begin_pop:n {}
+      }
+      {
+      }
+  }
+\AssignTaggingSocketPlug{link/after}{ba_link}
+
+\cs_new_protected:Npn \ba_artifact_begin:n #1
+  {
+    \tag_mc_begin:n { artifact = #1 }
+  }
+
+\cs_new_protected:Npn \ba_artifact_end:
+  {
+    \tag_mc_end:
+  }
+
+\cs_new_protected:Npn \ba_set_link_contents:nn #1#2
+  {
+    \pdfannot_dict_put:nne { #1 } { Contents } { (#2) }
+  }
+
+\cs_new_protected:Npn \ba_nav_symbols_begin:
+  {
+    \ba_artifact_begin:n { layout }
+    \pdfannot_dict_put:nne { link/GoTo } { Contents } { (Navigation) }
+    \pdfannot_dict_put:nne { link/Named } { Contents } { (Navigation) }
   }
 
 % The package wraps Beamer's existing visual implementation. It emits only
@@ -473,14 +537,38 @@
 \AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
 %
 
-% List support for itemize and enumerate across nesting levels 1, 2, and 3:
+% List support for itemize, enumerate, and description across nesting levels 1, 2, and 3:
 \AddToHook{env/itemize/begin}{\csname ba_list_begin:\endcsname}
 \AddToHook{env/itemize/end}{\csname ba_list_end:\endcsname}
 \AddToHook{env/enumerate/begin}{\csname ba_list_begin:\endcsname}
 \AddToHook{env/enumerate/end}{\csname ba_list_end:\endcsname}
+\AddToHook{env/description/begin}{\csname ba_list_begin:\endcsname}
+\AddToHook{env/description/end}{\csname ba_list_end:\endcsname}
 
 % Wrap Beamer item and title templates after all preamble theme definitions.
-\AddToHook{begindocument/end}{%
+\AddToHook{begindocument/end}
+  {
+    \let\ba@orig@footnoterule\footnoterule
+    \def\footnoterule{%
+      \csname ba_artifact_begin:n\endcsname{layout}%
+      \ba@orig@footnoterule
+      \csname ba_artifact_end:\endcsname
+    }%
+    \addtobeamertemplate{background canvas}
+      {\csname ba_artifact_begin:n\endcsname{background}}
+      {\csname ba_artifact_end:\endcsname}%
+    \addtobeamertemplate{background}
+      {\csname ba_artifact_begin:n\endcsname{background}}
+      {\csname ba_artifact_end:\endcsname}%
+    \addtobeamertemplate{sidebar left}
+      {\csname ba_artifact_begin:n\endcsname{layout}}
+      {\csname ba_artifact_end:\endcsname}%
+    \addtobeamertemplate{sidebar right}
+      {\csname ba_artifact_begin:n\endcsname{layout}}
+      {\csname ba_artifact_end:\endcsname}%
+    \addtobeamertemplate{navigation symbols}
+      {\csname ba_nav_symbols_begin:\endcsname}
+      {\csname ba_artifact_end:\endcsname}%
   \addtobeamertemplate{itemize item}
     {\csname ba_item_label_begin:\endcsname}
     {\csname ba_item_label_end:\endcsname}%
@@ -497,6 +585,9 @@
     {\csname ba_item_label_begin:\endcsname}
     {\csname ba_item_label_end:\endcsname}%
   \addtobeamertemplate{enumerate subsubitem}
+    {\csname ba_item_label_begin:\endcsname}
+    {\csname ba_item_label_end:\endcsname}%
+  \addtobeamertemplate{description item}
     {\csname ba_item_label_begin:\endcsname}
     {\csname ba_item_label_end:\endcsname}%
   \addtobeamertemplate{frametitle}
@@ -523,6 +614,8 @@
 }
 
 \makeatletter
+
+
 % Graphics alt text and structural tagging:
 \define@key{Gin}{alt}{\csname ba_graphics_set_alt:n\endcsname{#1}}
 \define@key{Gin}{alttext}{\csname ba_graphics_set_alt:n\endcsname{#1}}
@@ -618,10 +711,6 @@
 }
 
 \makeatother
-
-% Description lists remain unsupported in v0.5 and fall back cleanly.
-\AddToHook{env/description/begin}{\csname ba_suppress_begin:\endcsname}
-\AddToHook{env/description/end}{\csname ba_suppress_end:\endcsname}
 
 % beamer@framepauses surrounds the slide body contents.
 \AddToHook{env/beamer@framepauses/end}{\csname ba_body_end:\endcsname}
