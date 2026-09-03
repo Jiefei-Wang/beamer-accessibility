@@ -13,6 +13,8 @@
 \bool_gset_false:N \g__ba_strict_bool
 \bool_new:N \g__ba_navsymbols_bool
 \bool_gset_false:N \g__ba_navsymbols_bool
+\tl_new:N \g__ba_overlay_policy_tl
+\tl_gset:Nn \g__ba_overlay_policy_tl { pages }
 
 \keys_define:nn { beamer-accessibility }
   {
@@ -25,10 +27,26 @@
     compat .code:n = { \bool_gset_false:N \g__ba_strict_bool },
     navsymbols .bool_gset:N = \g__ba_navsymbols_bool,
     navsymbols .initial:n = { false },
+    overlay-policy .choice:,
+    overlay-policy / pages .code:n = { \tl_gset:Nn \g__ba_overlay_policy_tl { pages } },
+    overlay-policy / handout .code:n = { \tl_gset:Nn \g__ba_overlay_policy_tl { handout } },
+    overlay-policy / strict .code:n = { \tl_gset:Nn \g__ba_overlay_policy_tl { strict } },
+    overlay-policy .initial:n = { pages },
     unknown .code:n = {},
   }
 
 \ProcessKeyOptions [ beamer-accessibility ]
+
+% Compatibility boundary for Beamer's installed overlay item parser.
+\makeatletter
+\@ifundefined{beamer@parseitem}
+  {\PackageError{beamer-accessibility}{Unsupported Beamer overlay parser}{Update Beamer or use overlay-policy=pages.}}
+  {\let\ba@orig@parseitem\beamer@parseitem
+   \def\beamer@parseitem<#1>{%
+     \tl_if_eq:NnT \g__ba_overlay_policy_tl { strict }
+       {\PackageError{beamer-accessibility}{Overlay specification on \\item detected}{Use overlay-policy=pages or overlay-policy=handout.}}%
+     \ba@orig@parseitem<#1>}}
+\makeatletter
 
 \AddToHook{begindocument/before}
   {
@@ -388,7 +406,27 @@
     \tag_struct_end:
   }
 
+% Option-only spelling for inline TikZ/PGFPlots (including \input sources).
+\keys_define:nn { beamer-accessibility / figure }
+  { alt .tl_set:N = \l__ba_fig_alt_tl,
+    decorative .bool_set:N = \l__ba_fig_decorative_bool,
+    artifact .bool_set:N = \l__ba_fig_decorative_bool }
+\tl_if_exist:NF \l__ba_fig_alt_tl { \tl_new:N \l__ba_fig_alt_tl }
+\bool_if_exist:NF \l__ba_fig_decorative_bool { \bool_new:N \l__ba_fig_decorative_bool }
+\NewDocumentEnvironment{accessibleFigure}{ O{} }
+  {\group_begin:\tl_clear:N \l__ba_fig_alt_tl\bool_set_false:N \l__ba_fig_decorative_bool
+   \keys_set:nn { beamer-accessibility / figure } {#1}
+   \bool_if:NTF \l__ba_fig_decorative_bool
+     {\tag_mc_begin:n {artifact=figure}}
+     {\tl_if_empty:NTF \l__ba_fig_alt_tl
+        {\ba_graphics_check_alt:n {inline figure}\tag_struct_begin:n {tag=Figure}\tag_mc_begin:n {}}
+        {\tag_struct_begin:n {tag=Figure,alt={\l__ba_fig_alt_tl}}\tag_mc_begin:n {}}}}
+  {\tag_mc_end:\bool_if:NF \l__ba_fig_decorative_bool {\tag_struct_end:}\group_end:}
+
 % Accessible table commands
+\NewDocumentEnvironment{accessibleTable}{ O{} }
+  {\begin{accessibletable}[#1]}
+  {\end{accessibletable}}
 \cs_new_protected:Npn \ba_table_begin:n #1
   {
     \ba_paragraph_end:
@@ -923,6 +961,15 @@
 \makeatother
 
 % beamer@framepauses surrounds the slide body contents.
+\makeatletter
+\ExplSyntaxOn
+\AddToHook{env/beamer@framepauses/begin}{%
+  \tl_if_eq:NnT \g__ba_overlay_policy_tl { strict }
+    {\let\ba@orig@pause\pause
+     \renewcommand{\pause}{\PackageError{beamer-accessibility}{\\pause detected}{Use overlay-policy=pages or overlay-policy=handout.}}}%
+}
+\ExplSyntaxOff
+\makeatother
 \AddToHook{env/beamer@framepauses/end}{\csname ba_body_end:\endcsname}
 
 % beamer@frameslide surrounds one rendered slide.

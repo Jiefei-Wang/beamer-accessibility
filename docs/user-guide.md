@@ -4,6 +4,13 @@
 
 ---
 
+## Overlay policies
+
+The `overlay-policy` option defaults to `pages`. Supported `\item` overlay specifications and `\pause` are tagged only when visible on each rendered page; already-visible content is intentionally repeated. Use `overlay-policy=handout` for a single complete accessible page per frame. Use `overlay-policy=strict` to stop on either supported incremental construct and revise the source. Other Beamer overlay mechanisms are outside this task and are not claimed as accessible support.
+
+Inline TikZ/PGFPlots can be wrapped with `accessibleFigure[alt={...}]` (or `decorative=true`); the wrapper also supports material loaded with `\input`. Tables can use the existing explicit `accessibletabular` API, or its `accessibleTable` alias, together with `\tablehead` and `\tablecell`.
+
+
 ## 1. Quick Start
 
 ### Document Class (Recommended)

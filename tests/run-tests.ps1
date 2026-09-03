@@ -14,7 +14,12 @@ try {
         $document = $file.BaseName
         $source = $file.FullName
         Write-Host "Compiling $document..."
+        $expectedFailure = $document -like '*-failure'
         & pdflatex -interaction=nonstopmode -halt-on-error $outputArgument $source | Out-Null
+        if ($expectedFailure) {
+            if ($LASTEXITCODE -eq 0) { throw "Expected LaTeX failure did not occur: $document" }
+            continue
+        }
         if ($LASTEXITCODE -ne 0) { throw "First LaTeX pass failed: $document" }
         & pdflatex -interaction=nonstopmode -halt-on-error $outputArgument $source | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Second LaTeX pass failed: $document" }
@@ -27,4 +32,3 @@ try {
 finally {
     Pop-Location
 }
-
