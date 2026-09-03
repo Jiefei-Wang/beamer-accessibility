@@ -1,0 +1,17 @@
+\documentclass[14pt,t]{beamer-accessibility}
+\usetheme{Boadilla}
+\begin{document}
+\begin{frame}{Column Headers Table}
+\begin{accessibleTable}[header-rows=1, title={Dataset Summary}]
+\centering
+\begin{accessibletabular}{lrr}
+\hline
+\tablehead{Variable} & \tablehead{Mean} & \tablehead{SD} \tablerowend \\
+\hline
+\tablecell{BMI} & \tablecell{28.4} & \tablecell{4.2} \tablerowend \\
+\tablecell{Age} & \tablecell{54.1} & \tablecell{9.8} \tablerowend \\
+\hline
+\end{accessibletabular}
+\end{accessibleTable}
+\end{frame}
+\end{document}

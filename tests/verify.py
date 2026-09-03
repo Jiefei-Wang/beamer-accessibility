@@ -535,6 +535,120 @@ def main() -> None:
             frame_children=["/frametitle", "/Table"],
             baseline="accessible-table-baseline",
         ),
+        # Overlays & incremental fixtures
+        FixtureSpec(
+            name="overlay-items-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            baseline="overlay-items-baseline",
+        ),
+        FixtureSpec(
+            name="overlay-plus-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            baseline="overlay-plus-baseline",
+        ),
+        FixtureSpec(
+            name="overlay-nested-list-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 4, "/LI": 7, "/Lbl": 7, "/LBody": 7, "/P": 7}),
+            baseline="overlay-nested-list-baseline",
+        ),
+        FixtureSpec(
+            name="overlay-para-after-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 5}),
+            baseline="overlay-para-after-baseline",
+        ),
+        FixtureSpec(
+            name="overlay-in-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/block": 2, "/blocktitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            baseline="overlay-in-block-baseline",
+        ),
+        FixtureSpec(
+            name="overlay-in-column-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/column": 4, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 5}),
+            baseline="overlay-in-column-baseline",
+        ),
+        FixtureSpec(
+            name="pause-paragraphs-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/P": 3}),
+            baseline="pause-paragraphs-baseline",
+        ),
+        FixtureSpec(
+            name="pause-in-block-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/block": 2, "/blocktitle": 2, "/P": 2}),
+            baseline="pause-in-block-baseline",
+        ),
+        FixtureSpec(
+            name="pause-after-list-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 5}),
+            baseline="pause-after-list-baseline",
+        ),
+        FixtureSpec(
+            name="pause-combined-overlay-tagged",
+            roles=Counter({"/Document": 1, "/frame": 3, "/frametitle": 3, "/L": 3, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 6}),
+            baseline="pause-combined-overlay-baseline",
+        ),
+        # Overlay policies
+        FixtureSpec(
+            name="policy-pages-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
+            baseline="policy-pages-baseline",
+        ),
+        FixtureSpec(
+            name="policy-handout-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 2, "/Lbl": 2, "/LBody": 2, "/P": 2}),
+            baseline="policy-handout-baseline",
+        ),
+        # Tables & figures
+        FixtureSpec(
+            name="table-col-headers-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/Table": 1, "/TR": 3, "/TH": 3, "/TD": 6}),
+            baseline="table-col-headers-baseline",
+        ),
+        FixtureSpec(
+            name="table-row-col-headers-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/Table": 1, "/TR": 3, "/TH": 5, "/TD": 4}),
+            baseline="table-row-col-headers-baseline",
+            check_pixels=False,
+        ),
+        FixtureSpec(
+            name="figure-pgfplots-alt-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/Figure": 1}),
+            baseline="figure-pgfplots-alt-baseline",
+            check_pixels=False,
+        ),
+        FixtureSpec(
+            name="figure-tikz-decorative-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1}),
+            baseline="figure-tikz-decorative-baseline",
+            check_pixels=False,
+        ),
+        # Structural hardening & formatting
+        FixtureSpec(
+            name="centered-pathname-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 1}),
+            baseline="centered-pathname-baseline",
+        ),
+        FixtureSpec(
+            name="empty-cases-tagged",
+            roles=Counter({"/Document": 1, "/frame": 2, "/column": 2, "/P": 3, "/frametitle": 1, "/L": 1, "/LI": 1, "/Lbl": 1, "/LBody": 1}),
+            baseline="empty-cases-baseline",
+            check_pixels=False,
+        ),
+        FixtureSpec(
+            name="bookmarks-check-tagged",
+            roles=Counter({"/Document": 1, "/frame": 4, "/frametitle": 3, "/P": 5, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3}),
+            baseline="bookmarks-check-baseline",
+        ),
+        FixtureSpec(
+            name="nav-symbols-hidden-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 1}),
+            baseline="nav-symbols-hidden-baseline",
+        ),
+        FixtureSpec(
+            name="accessible-colors-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 1}),
+            baseline="accessible-colors-baseline",
+            check_pixels=False,
+        ),
     ]
 
     print(f"Running verification on {len(fixtures)} fixtures...")
@@ -558,7 +672,76 @@ def main() -> None:
 
         print(f"  [OK] {spec.name}")
 
-    print("ALL TESTS PASSED: structure assertions, text identity, and 300-DPI pixel regressions.")
+    # Additional verifications
+    verify_bookmarks_outlines(build / "bookmarks-check-tagged.pdf")
+    verify_accessible_contrast()
+    verify_negative_and_warning_tests(build)
+
+    print("ALL TESTS PASSED: structure assertions, text identity, 300-DPI pixel regressions, contrast, and policy enforcement.")
+
+
+def verify_bookmarks_outlines(pdf_path: Path):
+    reader = PdfReader(pdf_path)
+    outlines = reader.outline
+    titles = [item["/Title"] for item in outlines if isinstance(item, dict) and "/Title" in item]
+    if titles != ["Slide 1", "Slide 2", "Slide 3"]:
+        raise AssertionError(f"Unexpected bookmark titles in {pdf_path.name}: {titles}")
+    print("  [OK] Bookmarks outline hierarchy (1 outline per logical frame, no duplicates)")
+
+
+def verify_accessible_contrast():
+    def srgb_to_lin(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    def luminance(r, g, b):
+        return 0.2126 * srgb_to_lin(r) + 0.7152 * srgb_to_lin(g) + 0.0722 * srgb_to_lin(b)
+
+    def contrast(rgb1, rgb2):
+        l1 = luminance(*rgb1)
+        l2 = luminance(*rgb2)
+        hi, lo = max(l1, l2), min(l1, l2)
+        return (hi + 0.05) / (lo + 0.05)
+
+    pairs = [
+        ("Alert block title (white on red!75!black)", (1.0, 1.0, 1.0), (0.75, 0.0, 0.0)),
+        ("Alert block body (black on red!10!white)", (0.0, 0.0, 0.0), (1.0, 0.9, 0.9)),
+        ("Author head/foot (white on blue!40!black)", (1.0, 1.0, 1.0), (0.0, 0.0, 0.4)),
+        ("Title head/foot (white on blue!30!black)", (1.0, 1.0, 1.0), (0.0, 0.0, 0.3)),
+        ("Date head/foot (white on blue!20!black)", (1.0, 1.0, 1.0), (0.0, 0.0, 0.2)),
+        ("Alerted text (red!60!black on white)", (0.6, 0.0, 0.0), (1.0, 1.0, 1.0)),
+    ]
+    for name, c1, c2 in pairs:
+        cr = contrast(c1, c2)
+        if cr < 4.5:
+            raise AssertionError(f"Contrast failure for {name}: {cr:.2f}:1 < 4.5:1")
+    print("  [OK] Accessible contrast verification (all WCAG 2.1 AA >= 4.5:1)")
+
+
+def verify_negative_and_warning_tests(build_dir: Path):
+    tests = [
+        ("tests/fixtures/policy-strict-test.tex", True, "Overlay specification on \\item detected"),
+        ("tests/fixtures/table-unannotated-warn-test.tex", False, "Unannotated tabular detected in slide body"),
+        ("tests/fixtures/table-unannotated-strict-test.tex", True, "Unannotated tabular detected in slide body"),
+        ("tests/fixtures/figure-strict-missing-alt-test.tex", True, "missing required alternative text"),
+    ]
+    for tex_path, expect_error, pattern in tests:
+        res = subprocess.run(
+            ["pdflatex", "-interaction=nonstopmode", f"-output-directory={build_dir}", tex_path],
+            capture_output=True, text=True
+        )
+        raw = res.stdout + res.stderr
+        output = raw.replace("\n", "").replace("\r", "")
+        if expect_error:
+            if res.returncode == 0:
+                raise AssertionError(f"Expected failure for {tex_path}, but compilation succeeded!")
+            if pattern not in output:
+                raise AssertionError(f"Expected pattern '{pattern}' not found in output of {tex_path}")
+        else:
+            if res.returncode != 0:
+                raise AssertionError(f"Expected success with warning for {tex_path}, but compilation failed!")
+            if pattern not in output:
+                raise AssertionError(f"Expected warning '{pattern}' not found in output of {tex_path}")
+    print("  [OK] Negative and warning policy tests passed")
 
 
 if __name__ == "__main__":

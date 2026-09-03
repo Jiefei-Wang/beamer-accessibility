@@ -1,0 +1,17 @@
+\documentclass[14pt,t]{beamer-accessibility}
+\usetheme{Boadilla}
+\begin{document}
+\begin{frame}{Row and Column Headers Table}
+\begin{accessibleTable}[header-rows=1, first-column-headers=true, title={Obesity Percentages}]
+\centering
+\begin{accessibletabular}{lrr}
+\hline
+\tablehead{State} & \tablehead{Percent} & \tablehead{Rank} \tablerowend \\
+\hline
+\tablehead{Alabama} & \tablecell{33.5} & \tablecell{3} \tablerowend \\
+\tablehead{Alaska} & \tablecell{27.4} & \tablecell{38} \tablerowend \\
+\hline
+\end{accessibletabular}
+\end{accessibleTable}
+\end{frame}
+\end{document}

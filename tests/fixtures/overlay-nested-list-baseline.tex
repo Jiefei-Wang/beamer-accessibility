@@ -1,0 +1,16 @@
+\RequirePackage{pdfmanagement}
+\documentclass[14pt,t]{beamer}
+\usetheme{Boadilla}
+\setbeamertemplate{navigation symbols}{}
+\begin{document}
+\begin{frame}{Nested List in Overlay}
+\begin{itemize}
+\item<1-> Outer item.
+  \begin{itemize}
+  \item Inner item A.
+  \item Inner item B.
+  \end{itemize}
+\item<2-> Subsequent outer item.
+\end{itemize}
+\end{frame}
+\end{document}
