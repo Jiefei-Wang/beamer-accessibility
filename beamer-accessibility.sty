@@ -9,11 +9,22 @@
 \ExplSyntaxOn
 \tl_new:N \g__ba_lang_tl
 \tl_gset:Nn \g__ba_lang_tl { en-US }
+\bool_new:N \g__ba_strict_bool
+\bool_gset_false:N \g__ba_strict_bool
+\bool_new:N \g__ba_navsymbols_bool
+\bool_gset_false:N \g__ba_navsymbols_bool
 
 \keys_define:nn { beamer-accessibility }
   {
     lang .tl_gset:N = \g__ba_lang_tl,
     lang .initial:n = { en-US },
+    mode .choice:,
+    mode / strict .code:n = { \bool_gset_true:N \g__ba_strict_bool },
+    mode / compat .code:n = { \bool_gset_false:N \g__ba_strict_bool },
+    strict .code:n = { \bool_gset_true:N \g__ba_strict_bool },
+    compat .code:n = { \bool_gset_false:N \g__ba_strict_bool },
+    navsymbols .bool_gset:N = \g__ba_navsymbols_bool,
+    navsymbols .initial:n = { false },
     unknown .code:n = {},
   }
 
@@ -25,6 +36,10 @@
     \pdfmanagement_add:nnn { Catalog } { ViewerPreferences } { << /DisplayDocTitle ~ true >> }
     \tl_set:Nn \l__tag_name_link_tl { Link }
     \bool_gset_true:N \l__tag_active_socket_bool
+    \bool_if:NF \g__ba_navsymbols_bool
+      {
+        \setbeamertemplate{navigation~symbols}{}
+      }
   }
 
 \tagpdfsetup
@@ -40,6 +55,10 @@
     role/new-tag    = blocktitle/H2,
     role/new-tag    = column/Div,
     role/new-tag    = Link/Link,
+    role/new-tag    = Table/Table,
+    role/new-tag    = TR/TR,
+    role/new-tag    = TH/TH,
+    role/new-tag    = TD/TD,
   }
 
 % Define tagging socket plugs for links: only create structure inside active slide body
@@ -99,29 +118,26 @@
     \pdfannot_dict_put:nne { link/Named } { Contents } { (Navigation) }
   }
 
-% The package wraps Beamer's existing visual implementation. It emits only
-% structure and marked-content objects; Beamer remains responsible for layout.
+% Structural states
 \bool_new:N \g__ba_frame_active_bool
 \bool_new:N \g__ba_body_active_bool
 \bool_new:N \g__ba_para_open_bool
+\bool_new:N \g__ba_para_artifact_bool
 \bool_new:N \g__ba_in_title_bool
 \bool_new:N \g__ba_in_label_bool
-\bool_new:N \g__ba_frame_unsupported_bool
+\bool_new:N \g__ba_in_table_bool
 \int_new:N  \g__ba_para_suppress_int
 \int_new:N  \g__ba_list_depth_int
 
 % Per-depth list state for nesting levels 1, 2, and 3:
-\bool_new:N \g__ba_list_pending_i_bool
 \bool_new:N \g__ba_list_open_i_bool
 \bool_new:N \g__ba_li_open_i_bool
 \bool_new:N \g__ba_lbody_open_i_bool
 
-\bool_new:N \g__ba_list_pending_ii_bool
 \bool_new:N \g__ba_list_open_ii_bool
 \bool_new:N \g__ba_li_open_ii_bool
 \bool_new:N \g__ba_lbody_open_ii_bool
 
-\bool_new:N \g__ba_list_pending_iii_bool
 \bool_new:N \g__ba_list_open_iii_bool
 \bool_new:N \g__ba_li_open_iii_bool
 \bool_new:N \g__ba_lbody_open_iii_bool
@@ -136,7 +152,12 @@
 
 % Graphics structure state:
 \bool_new:N \g__ba_graphics_struct_bool
+\bool_new:N \g__ba_graphics_decorative_bool
 \tl_new:N   \g__ba_graphics_alt_tl
+
+% Table structure state:
+\bool_new:N \g__ba_table_open_bool
+\bool_new:N \g__ba_tr_open_bool
 
 \cs_new_protected:Npn \ba_body_begin:
   {
@@ -160,26 +181,51 @@
               {
                 \bool_if:NF \g__ba_in_label_bool
                   {
-                    \bool_if:NF \g__ba_frame_unsupported_bool
+                    \bool_if:NF \g__ba_in_table_bool
                       {
-                        \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
+                        \legacy_if:nF { @inlabel }
                           {
-                            \bool_if:NTF \g__ba_in_block_title_bool
+                            \int_compare:nNnTF { \beamer@coveringdepth } = { 0 }
                               {
-                                \bool_if:NF \g__ba_block_title_open_bool
+                                \int_compare:nNnT { \g__ba_para_suppress_int } = { 0 }
                                   {
-                                    \tag_struct_begin:n { tag=blocktitle }
-                                    \tag_mc_begin:n { }
-                                    \bool_gset_true:N \g__ba_block_title_open_bool
+                                    \bool_if:NTF \g__ba_in_block_title_bool
+                                      {
+                                        \bool_if:NF \g__ba_block_title_open_bool
+                                          {
+                                            \tag_struct_begin:n { tag = blocktitle }
+                                            \tag_mc_begin:n { }
+                                            \bool_gset_true:N \g__ba_block_title_open_bool
+                                          }
+                                      }
+                                      {
+                                        \int_compare:nNnTF { \g__ba_list_depth_int } > { 0 }
+                                          {
+                                            \use:c { bool_if:cT } { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+                                              {
+                                                \bool_if:NF \g__ba_para_open_bool
+                                                  {
+                                                    \tag_struct_begin:n { tag = P }
+                                                    \tag_mc_begin:n { }
+                                                    \bool_gset_true:N \g__ba_para_open_bool
+                                                  }
+                                              }
+                                          }
+                                          {
+                                            \bool_if:NF \g__ba_para_open_bool
+                                              {
+                                                \tag_struct_begin:n { tag = P }
+                                                \tag_mc_begin:n { }
+                                                \bool_gset_true:N \g__ba_para_open_bool
+                                              }
+                                          }
+                                      }
                                   }
                               }
                               {
-                                \bool_if:NF \g__ba_para_open_bool
-                                  {
-                                    \tag_struct_begin:n { tag=P }
-                                    \tag_mc_begin:n { }
-                                    \bool_gset_true:N \g__ba_para_open_bool
-                                  }
+                                % When covered, artifact any emitted text so it is not unclassified
+                                \ba_artifact_begin:n { layout }
+                                \bool_gset_true:N \g__ba_para_artifact_bool
                               }
                           }
                       }
@@ -191,6 +237,11 @@
 
 \cs_new_protected:Npn \ba_paragraph_end:
   {
+    \bool_if:NT \g__ba_para_artifact_bool
+      {
+        \ba_artifact_end:
+        \bool_gset_false:N \g__ba_para_artifact_bool
+      }
     \bool_if:NT \g__ba_block_title_open_bool
       {
         \tag_mc_end:
@@ -210,12 +261,9 @@
     \ba_paragraph_end:
     \bool_if:NT \g__ba_frame_active_bool
       {
-        \bool_if:NF \g__ba_frame_unsupported_bool
-          {
-            \tag_struct_begin:n { tag=block }
-            \bool_gset_true:N \g__ba_block_open_bool
-            \bool_gset_true:N \g__ba_in_block_title_bool
-          }
+        \tag_struct_begin:n { tag = block }
+        \bool_gset_true:N \g__ba_block_open_bool
+        \bool_gset_true:N \g__ba_in_block_title_bool
       }
   }
 
@@ -243,20 +291,52 @@
 \cs_new_protected:Npn \ba_graphics_set_alt:n #1
   {
     \tl_gset:Nn \g__ba_graphics_alt_tl { #1 }
+    \bool_gset_false:N \g__ba_graphics_decorative_bool
   }
 
-\cs_new_protected:Npn \ba_graphics_clear_alt:
+\cs_new_protected:Npn \ba_graphics_set_decorative:
   {
+    \bool_gset_true:N \g__ba_graphics_decorative_bool
     \tl_gclear:N \g__ba_graphics_alt_tl
   }
 
-\cs_new_protected:Npn \ba_graphics_begin:
+\cs_new_protected:Npn \ba_graphics_clear:
   {
+    \tl_gclear:N \g__ba_graphics_alt_tl
+    \bool_gset_false:N \g__ba_graphics_decorative_bool
+  }
+
+\cs_new_protected:Npn \ba_graphics_check_alt:n #1
+  {
+    \bool_if:NF \g__ba_graphics_decorative_bool
+      {
+        \tl_if_empty:NT \g__ba_graphics_alt_tl
+          {
+            \bool_if:NTF \g__ba_strict_bool
+              {
+                \PackageError{beamer-accessibility}
+                  {Non-decorative~image~'#1'~missing~required~alternative~text}
+                  {Provide~alt={...}~in~\protect\includegraphics\space~or~mark~decorative=true.}
+              }
+              {
+                \PackageWarning{beamer-accessibility}
+                  {Non-decorative~image~'#1'~missing~alternative~text.~Tagging~as~Figure~without~alt.}
+              }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_graphics_begin:n #1
+  {
+    \ba_graphics_check_alt:n { #1 }
     \bool_if:NT \g__ba_frame_active_bool
       {
         \bool_if:NT \g__ba_body_active_bool
           {
-            \bool_if:NF \g__ba_frame_unsupported_bool
+            \bool_if:NTF \g__ba_graphics_decorative_bool
+              {
+                \tag_mc_begin:n { artifact = figure }
+              }
               {
                 \bool_if:NT \g__ba_para_open_bool
                   {
@@ -278,19 +358,145 @@
 
 \cs_new_protected:Npn \ba_graphics_end:
   {
-    \bool_if:NT \g__ba_graphics_struct_bool
+    \bool_if:NTF \g__ba_graphics_decorative_bool
       {
         \tag_mc_end:
-        \tag_struct_end:
-        \bool_gset_false:N \g__ba_graphics_struct_bool
-        \bool_if:NT \g__ba_para_open_bool
+      }
+      {
+        \bool_if:NT \g__ba_graphics_struct_bool
           {
-            \tag_mc_begin:n { }
+            \tag_mc_end:
+            \tag_struct_end:
+            \bool_gset_false:N \g__ba_graphics_struct_bool
+            \bool_if:NT \g__ba_para_open_bool
+              {
+                \tag_mc_begin:n { }
+              }
           }
       }
-    \tl_gclear:N \g__ba_graphics_alt_tl
+    \ba_graphics_clear:
   }
 
+\NewDocumentEnvironment{accessiblefigure}{ O{} m }
+  {
+    \ba_paragraph_end:
+    \tag_struct_begin:n { tag = Figure, alt = {#2} }
+    \tag_mc_begin:n { }
+  }
+  {
+    \tag_mc_end:
+    \tag_struct_end:
+  }
+
+% Accessible table commands
+\cs_new_protected:Npn \ba_table_begin:n #1
+  {
+    \ba_paragraph_end:
+    \bool_gset_true:N \g__ba_in_table_bool
+    \tl_if_empty:nTF { #1 }
+      {
+        \tag_struct_begin:n { tag = Table }
+      }
+      {
+        \tag_struct_begin:n { tag = Table, alt = {#1} }
+      }
+    \bool_gset_true:N \g__ba_table_open_bool
+    \bool_gset_false:N \g__ba_tr_open_bool
+  }
+
+\cs_new_protected:Npn \ba_table_end:
+  {
+    \ba_tr_end:
+    \bool_if:NT \g__ba_table_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_table_open_bool
+      }
+    \bool_gset_false:N \g__ba_in_table_bool
+  }
+
+\cs_new_protected:Npn \ba_tr_begin:
+  {
+    \bool_if:NF \g__ba_tr_open_bool
+      {
+        \tag_struct_begin:n { tag = TR }
+        \bool_gset_true:N \g__ba_tr_open_bool
+      }
+  }
+
+\cs_new_protected:Npn \ba_tr_end:
+  {
+    \bool_if:NT \g__ba_tr_open_bool
+      {
+        \tag_struct_end:
+        \bool_gset_false:N \g__ba_tr_open_bool
+      }
+  }
+
+\NewDocumentCommand{\tablerowbegin}{} { \ba_tr_begin: }
+\NewDocumentCommand{\tablerowend}{} { \ba_tr_end: }
+
+\NewDocumentCommand{\tablehead}{m}
+  {
+    \ba_tr_begin:
+    \tag_struct_begin:n { tag = TH }
+    \tag_mc_begin:n { }
+    #1
+    \tag_mc_end:
+    \tag_struct_end:
+  }
+
+\NewDocumentCommand{\tablecell}{m}
+  {
+    \ba_tr_begin:
+    \tag_struct_begin:n { tag = TD }
+    \tag_mc_begin:n { }
+    #1
+    \tag_mc_end:
+    \tag_struct_end:
+  }
+
+\NewDocumentEnvironment{accessibletabular}{ O{} m }
+  {
+    \ba_table_begin:n { #1 }
+    \begin{tabular}{#2}
+  }
+  {
+    \end{tabular}
+    \ba_table_end:
+  }
+
+\NewDocumentEnvironment{accessibletable}{ O{} }
+  {
+    \ba_paragraph_end:
+    \begin{table}[#1]
+  }
+  {
+    \end{table}
+  }
+
+% Tabular detection hook
+\AddToHook{env/tabular/before}
+  {
+    \bool_if:NT \g__ba_body_active_bool
+      {
+        \bool_if:NF \g__ba_in_table_bool
+          {
+            \bool_if:NTF \g__ba_strict_bool
+              {
+                \PackageError{beamer-accessibility}
+                  {Unannotated~tabular~detected~in~slide~body}
+                  {Use~accessibletabular~with~\protect\tablehead\space~and~\protect\tablecell\space~for~accessible~tables.}
+              }
+              {
+                \PackageWarning{beamer-accessibility}
+                  {Unannotated~tabular~detected~in~slide~body.~Table~structure~will~not~be~tagged.}
+              }
+          }
+      }
+  }
+
+% List management
 \cs_new_protected:Npn \ba_list_close_item_at:n #1
   {
     \ba_paragraph_end:
@@ -314,7 +520,6 @@
         \tag_struct_end:
         \bool_gset_false:c { g__ba_list_open_ \int_to_roman:n { #1 } _bool }
       }
-    \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { #1 } _bool }
   }
 
 \cs_new_protected:Npn \ba_list_close_all:
@@ -336,11 +541,8 @@
       }
     \bool_if:NT \g__ba_frame_active_bool
       {
-        \bool_if:NF \g__ba_frame_unsupported_bool
-          {
-            \tag_struct_begin:n { tag = column }
-            \bool_gset_true:N \g__ba_column_open_bool
-          }
+        \tag_struct_begin:n { tag = column }
+        \bool_gset_true:N \g__ba_column_open_bool
       }
   }
 
@@ -371,24 +573,28 @@
   {
     \bool_if:NF \g__ba_frame_active_bool
       {
-        \tag_struct_begin:n { tag=frame }
+        \tag_struct_begin:n { tag = frame }
         \bool_gset_true:N \g__ba_frame_active_bool
         \bool_gset_false:N \g__ba_body_active_bool
-        \bool_gset_false:N \g__ba_frame_unsupported_bool
         \int_step_inline:nn { 3 }
           {
-            \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { ##1 } _bool }
             \bool_gset_false:c { g__ba_list_open_ \int_to_roman:n { ##1 } _bool }
             \bool_gset_false:c { g__ba_li_open_ \int_to_roman:n { ##1 } _bool }
             \bool_gset_false:c { g__ba_lbody_open_ \int_to_roman:n { ##1 } _bool }
           }
         \int_gzero:N \g__ba_list_depth_int
         \int_gzero:N \g__ba_para_suppress_int
+        \bool_gset_false:N \g__ba_para_open_bool
+        \bool_gset_false:N \g__ba_para_artifact_bool
+        \bool_gset_false:N \g__ba_in_title_bool
+        \bool_gset_false:N \g__ba_in_label_bool
+        \bool_gset_false:N \g__ba_in_table_bool
         \bool_gset_false:N \g__ba_block_open_bool
         \bool_gset_false:N \g__ba_in_block_title_bool
         \bool_gset_false:N \g__ba_block_title_open_bool
         \bool_gset_false:N \g__ba_column_open_bool
         \bool_gset_false:N \g__ba_graphics_struct_bool
+        \bool_gset_false:N \g__ba_graphics_decorative_bool
         \tl_gclear:N \g__ba_graphics_alt_tl
       }
   }
@@ -434,7 +640,6 @@
   {
     \ba_list_close_all:
     \ba_paragraph_end:
-    \bool_gset_true:N \g__ba_frame_unsupported_bool
     \int_gincr:N \g__ba_para_suppress_int
   }
 
@@ -449,23 +654,16 @@
     \ba_paragraph_end:
     \bool_if:NT \g__ba_frame_active_bool
       {
-        \bool_if:NF \g__ba_frame_unsupported_bool
+        \int_compare:nNnTF { \g__ba_list_depth_int } < { 3 }
           {
-            \int_compare:nNnTF { \g__ba_para_suppress_int } = { 0 }
-              {
-                \int_compare:nNnTF { \g__ba_list_depth_int } < { 3 }
-                  {
-                    \int_gincr:N \g__ba_list_depth_int
-                    \bool_gset_true:c { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
-                  }
-                  {
-                    % List depth > 3 is unsupported.
-                    \ba_suppress_begin:
-                  }
-              }
-              {
-                \int_gincr:N \g__ba_para_suppress_int
-              }
+            \int_gincr:N \g__ba_list_depth_int
+            \tag_struct_begin:n { tag = L }
+            \bool_gset_true:c { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+            \bool_gset_false:c { g__ba_li_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+            \bool_gset_false:c { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+          }
+          {
+            \ba_suppress_begin:
           }
       }
   }
@@ -483,49 +681,75 @@
       }
   }
 
-\cs_new_protected:Npn \ba_item_label_begin:
+\cs_new_protected:Npn \ba_item_setup:
   {
-    \ba_paragraph_end:
     \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
       {
-        \use:c { bool_if:cT } { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+        \ba_list_close_item_at:n { \g__ba_list_depth_int }
+        \int_compare:nNnT { \beamer@coveringdepth } = { 0 }
           {
-            \tag_struct_begin:n { tag=L }
-            \bool_gset_true:c { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
-            \bool_gset_false:c { g__ba_list_pending_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
-          }
-        \use:c { bool_if:cT } { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
-          {
-            \ba_list_close_item_at:n { \g__ba_list_depth_int }
-            \tag_struct_begin:n { tag=LI }
+            \tag_struct_begin:n { tag = LI }
             \bool_gset_true:c { g__ba_li_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
-            \tag_struct_begin:n { tag=Lbl }
-            \bool_gset_true:N \g__ba_in_label_bool
-            \tag_mc_begin:n { }
+            \bool_gset_false:c { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
           }
       }
   }
 
-\cs_new_protected:Npn \ba_item_label_end:
+\cs_new_protected:Npn \ba_item_post:
   {
     \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
       {
-        \use:c { bool_if:cT } { g__ba_list_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+        \int_compare:nNnTF { \beamer@coveringdepth } = { 0 }
           {
-            \bool_if:NT \g__ba_in_label_bool
+            \use:c { bool_if:cT } { g__ba_li_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
               {
-                \tag_mc_end:
-                \tag_struct_end:
-                \bool_gset_false:N \g__ba_in_label_bool
-                \tag_struct_begin:n { tag=LBody }
-                \bool_gset_true:c { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+                \use:c { bool_if:cF } { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+                  {
+                    \tag_struct_begin:n { tag = LBody }
+                    \bool_gset_true:c { g__ba_lbody_open_ \int_to_roman:n { \g__ba_list_depth_int } _bool }
+                    \everypar\expandafter{\the\everypar \csname ba_paragraph_begin:\endcsname}
+                  }
               }
           }
+          {
+            \everypar\expandafter{\the\everypar \csname ba_paragraph_begin:\endcsname}
+          }
       }
   }
 
-% Retained as a low-level experimental API. The automatic hooks are idempotent
-% with these commands, which keeps the validated manual prototypes usable.
+\cs_new_protected:Npn \ba_item_lbl_begin:
+  {
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
+      {
+        \int_compare:nNnTF { \beamer@coveringdepth } = { 0 }
+          {
+            \bool_gset_true:N \g__ba_in_label_bool
+            \tag_struct_begin:n { tag = Lbl }
+            \tag_mc_begin:n { }
+          }
+          {
+            \ba_artifact_begin:n { layout }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \ba_item_lbl_end:
+  {
+    \int_compare:nNnT { \g__ba_list_depth_int } > { 0 }
+      {
+        \int_compare:nNnTF { \beamer@coveringdepth } = { 0 }
+          {
+            \tag_mc_end:
+            \tag_struct_end:
+            \bool_gset_false:N \g__ba_in_label_bool
+          }
+          {
+            \ba_artifact_end:
+          }
+      }
+  }
+
+% Public experimental commands
 \NewDocumentCommand \BeamerAccessibilityFrameBegin { } { \ba_frame_begin: }
 \NewDocumentCommand \BeamerAccessibilityFrameEnd { } { \ba_frame_end: }
 \NewDocumentCommand \BeamerAccessibilityParagraphBegin { } { \ba_paragraph_begin: }
@@ -533,11 +757,11 @@
 
 \ExplSyntaxOff
 
-% Ordinary prose is tagged only while a rendered Beamer slide body is active.
+% Paragraph hooks
 \AddToHook{para/begin}{\csname ba_paragraph_begin:\endcsname}
-%
+\AddToHook{para/end}{\csname ba_paragraph_end:\endcsname}
 
-% List support for itemize, enumerate, and description across nesting levels 1, 2, and 3:
+% List hooks
 \AddToHook{env/itemize/begin}{\csname ba_list_begin:\endcsname}
 \AddToHook{env/itemize/end}{\csname ba_list_end:\endcsname}
 \AddToHook{env/enumerate/begin}{\csname ba_list_begin:\endcsname}
@@ -545,86 +769,81 @@
 \AddToHook{env/description/begin}{\csname ba_list_begin:\endcsname}
 \AddToHook{env/description/end}{\csname ba_list_end:\endcsname}
 
-% Wrap Beamer item and title templates after all preamble theme definitions.
-\AddToHook{begindocument/end}
-  {
-    \let\ba@orig@footnoterule\footnoterule
-    \def\footnoterule{%
-      \csname ba_artifact_begin:n\endcsname{layout}%
-      \ba@orig@footnoterule
-      \csname ba_artifact_end:\endcsname
-    }%
-    \addtobeamertemplate{background canvas}
-      {\csname ba_artifact_begin:n\endcsname{background}}
-      {\csname ba_artifact_end:\endcsname}%
-    \addtobeamertemplate{background}
-      {\csname ba_artifact_begin:n\endcsname{background}}
-      {\csname ba_artifact_end:\endcsname}%
-    \addtobeamertemplate{sidebar left}
-      {\csname ba_artifact_begin:n\endcsname{layout}}
-      {\csname ba_artifact_end:\endcsname}%
-    \addtobeamertemplate{sidebar right}
-      {\csname ba_artifact_begin:n\endcsname{layout}}
-      {\csname ba_artifact_end:\endcsname}%
-    \addtobeamertemplate{navigation symbols}
-      {\csname ba_nav_symbols_begin:\endcsname}
-      {\csname ba_artifact_end:\endcsname}%
-  \addtobeamertemplate{itemize item}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{itemize subitem}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{itemize subsubitem}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{enumerate item}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{enumerate subitem}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{enumerate subsubitem}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{description item}
-    {\csname ba_item_label_begin:\endcsname}
-    {\csname ba_item_label_end:\endcsname}%
-  \addtobeamertemplate{frametitle}
-    {\csname ba_frametitle_begin:\endcsname}
-    {\csname ba_frametitle_end:\endcsname}%
-  \addtobeamertemplate{block begin}
-    {\csname ba_block_begin:\endcsname}
-    {\csname ba_block_body_begin:\endcsname}%
-  \addtobeamertemplate{block end}
-    {}
-    {\csname ba_block_end:\endcsname}%
-  \addtobeamertemplate{block alerted begin}
-    {\csname ba_block_begin:\endcsname}
-    {\csname ba_block_body_begin:\endcsname}%
-  \addtobeamertemplate{block alerted end}
-    {}
-    {\csname ba_block_end:\endcsname}%
-  \addtobeamertemplate{block example begin}
-    {\csname ba_block_begin:\endcsname}
-    {\csname ba_block_body_begin:\endcsname}%
-  \addtobeamertemplate{block example end}
-    {}
-    {\csname ba_block_end:\endcsname}%
+% Suppress inaccessible navigation hyperlinks in presentation furniture
+\def\hyperlinkpresentationstart#1{#1}
+\def\hyperlinkpresentationend#1{#1}
+\def\hyperlinkdocumentstart#1{#1}
+\def\hyperlinkdocumentend#1{#1}
+\def\hyperlinkframestart#1{#1}
+\def\hyperlinkframeend#1{#1}
+\def\hyperlinksectionstart#1{#1}
+\def\hyperlinksectionend#1{#1}
+\def\hyperlinksubsectionstart#1{#1}
+\def\hyperlinksubsectionend#1{#1}
+\def\hyperlinkpartstart#1{#1}
+\def\hyperlinkpartend#1{#1}
+\def\hyperlinkappendixstart#1{#1}
+\def\hyperlinkappendixend#1{#1}
+
+% Wrap Beamer templates at begindocument/end
+\AddToHook{begindocument/end}{%
+  \let\ba@orig@footnoterule\footnoterule
+  \def\footnoterule{%
+    \csname ba_artifact_begin:n\endcsname{layout}%
+    \ba@orig@footnoterule
+    \csname ba_artifact_end:\endcsname
+  }%
+  \addtobeamertemplate{background canvas}{\csname ba_artifact_begin:n\endcsname{background}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{background}{\csname ba_artifact_begin:n\endcsname{background}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{sidebar left}{\csname ba_artifact_begin:n\endcsname{layout}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{sidebar right}{\csname ba_artifact_begin:n\endcsname{layout}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{headline}{\csname ba_artifact_begin:n\endcsname{layout}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{footline}{\csname ba_artifact_begin:n\endcsname{layout}}{\csname ba_artifact_end:\endcsname}%
+  \addtobeamertemplate{itemize item}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{itemize subitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{itemize subsubitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{enumerate item}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{enumerate subitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{enumerate subsubitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{description item}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{frametitle}{\csname ba_frametitle_begin:\endcsname}{\csname ba_frametitle_end:\endcsname}%
+  \addtobeamertemplate{block begin}{\csname ba_block_begin:\endcsname}{\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block end}{}{\csname ba_block_end:\endcsname}%
+  \addtobeamertemplate{block alerted begin}{\csname ba_block_begin:\endcsname}{\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block alerted end}{}{\csname ba_block_end:\endcsname}%
+  \addtobeamertemplate{block example begin}{\csname ba_block_begin:\endcsname}{\csname ba_block_body_begin:\endcsname}%
+  \addtobeamertemplate{block example end}{}{\csname ba_block_end:\endcsname}%
+  \addtobeamertemplate{caption}{\csname ba_paragraph_begin:\endcsname}{\csname ba_paragraph_end:\endcsname}%
 }
 
 \makeatletter
 
+% Item invocation wrapper
+\let\ba@orig@beamer@callorigitem\beamer@callorigitem
+\def\beamer@callorigitem{%
+  \csname ba_item_setup:\endcsname
+  \ba@orig@beamer@callorigitem@wrap
+}
+\def\ba@orig@beamer@callorigitem@wrap{%
+  \@ifnextchar[{\ba@callorig@opt}{\ba@callorig@noopt}}
+\def\ba@callorig@opt[#1]{%
+  \beamer@origitem[{#1}]\kern0pt\csname ba_item_post:\endcsname\ignorespaces
+}
+\def\ba@callorig@noopt{%
+  \beamer@origitem\kern0pt\csname ba_item_post:\endcsname\ignorespaces
+}
 
 % Graphics alt text and structural tagging:
 \define@key{Gin}{alt}{\csname ba_graphics_set_alt:n\endcsname{#1}}
 \define@key{Gin}{alttext}{\csname ba_graphics_set_alt:n\endcsname{#1}}
+\define@key{Gin}{decorative}[true]{\csname ba_graphics_set_decorative:\endcsname}
+\define@key{Gin}{artifact}[true]{\csname ba_graphics_set_decorative:\endcsname}
 
 \let\ba@orig@Gin@ii\Gin@ii
 \def\Gin@ii[#1]#2{%
   \begingroup
   \setkeys{Gin}{#1}%
-  \csname ba_graphics_begin:\endcsname
+  \csname ba_graphics_begin:n\endcsname{#2}%
   \ba@orig@Gin@ii[#1]{#2}%
   \csname ba_graphics_end:\endcsname
   \endgroup
@@ -662,15 +881,6 @@
 \def\beamer@checkframetitle{\@ifnextchar\bgroup\ba@inlineframetitle{\csname ba_body_begin:\endcsname}}
 \def\ba@inlineframetitle#1{%
   \@ifnextchar\bgroup{\frametitle{#1}\framesubtitle\csname ba_body_begin:\endcsname}{\frametitle{#1}\relax\csname ba_body_begin:\endcsname}%
-}
-
-% Safe overlay detection: when an item specifies overlay actions (e.g. \item<2->),
-% Beamer calls \beamer@parseitem. For v0.5, overlay lists are marked unsupported
-% to avoid generating misleading partial structure.
-\let\ba@orig@beamer@parseitem\beamer@parseitem
-\def\beamer@parseitem<#1>{%
-  \csname ba_suppress_begin:\endcsname%
-  \ba@orig@beamer@parseitem<#1>%
 }
 
 % Footnote support: wrap footnote text handlers to maintain stream MC balance.
@@ -715,11 +925,6 @@
 % beamer@framepauses surrounds the slide body contents.
 \AddToHook{env/beamer@framepauses/end}{\csname ba_body_end:\endcsname}
 
-% beamer@frameslide surrounds one rendered slide. The /after hook closes the
-% structure only after Beamer has constructed the title and output boxes.
+% beamer@frameslide surrounds one rendered slide.
 \AddToHook{env/beamer@frameslide/begin}{\csname ba_frame_begin:\endcsname}
 \AddToHook{env/beamer@frameslide/after}{\csname ba_frame_end:\endcsname}
-
-
-
-

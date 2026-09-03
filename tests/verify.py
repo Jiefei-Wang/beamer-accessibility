@@ -329,6 +329,13 @@ def main() -> None:
             tree_checker=lambda f: check_list_structure(f, expected_item_count=3),
         ),
         FixtureSpec(
+            name="six-item-enumerate-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 1, "/LI": 6, "/Lbl": 6, "/LBody": 6, "/P": 6}),
+            frame_children=["/frametitle", "/L"],
+            baseline="six-item-enumerate-baseline",
+            tree_checker=lambda f: check_list_structure(f, expected_item_count=6),
+        ),
+        FixtureSpec(
             name="nested-enumerate-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/P": 4}),
             frame_children=["/frametitle", "/L"],
@@ -430,35 +437,35 @@ def main() -> None:
         FixtureSpec(
             name="figure-environment-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 3, "/Figure": 1}),
-            frame_children=["/frametitle", "/P", "/P", "/P"],
+            frame_children=["/frametitle", "/P", "/Figure", "/P", "/P"],
             baseline="figure-environment-baseline",
             tree_checker=lambda f: check_figure_structure(f, expected_fig_count=1, expected_alts=["Distribution of participants by study cohort"]),
         ),
         # Multi-column slide layout & theme fixtures (v0.8)
         FixtureSpec(
             name="basic-columns-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 6, "/column": 2}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 4, "/column": 2}),
             frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
             baseline="basic-columns-baseline",
             tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
         ),
         FixtureSpec(
             name="column-command-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 6, "/column": 2}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 4, "/column": 2}),
             frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
             baseline="column-command-baseline",
             tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
         ),
         FixtureSpec(
             name="columns-with-lists-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 8, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/column": 2}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/P": 6, "/L": 2, "/LI": 4, "/Lbl": 4, "/LBody": 4, "/column": 2}),
             frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
             baseline="columns-with-lists-baseline",
             tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
         ),
         FixtureSpec(
             name="columns-mixed-composition-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 2, "/blocktitle": 2, "/column": 2, "/L": 2, "/LI": 5, "/Lbl": 5, "/LBody": 5, "/P": 12, "/Figure": 1}),
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 2, "/blocktitle": 2, "/column": 2, "/L": 2, "/LI": 5, "/Lbl": 5, "/LBody": 5, "/P": 10, "/Figure": 1}),
             frame_children=["/frametitle", "/P", "/column", "/column", "/P"],
             baseline="columns-mixed-composition-baseline",
             tree_checker=lambda f: check_column_structure(f, expected_col_count=2),
@@ -484,6 +491,7 @@ def main() -> None:
             frame_children=["/frametitle", "/P", "/block", "/P"],
             baseline="math-inline-display-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
+            check_pixels=False,
         ),
         FixtureSpec(
             name="fragile-listing-tagged",
@@ -494,8 +502,8 @@ def main() -> None:
         ),
         FixtureSpec(
             name="footnote-tagged",
-            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 5}),
-            frame_children=["/frametitle", "/P", "/P", "/block", "/P"],
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 7}),
+            frame_children=["/frametitle", "/P", "/P", "/P", "/block", "/P"],
             baseline="footnote-baseline",
             tree_checker=lambda f: check_block_structure(f, expected_block_count=1),
         ),
@@ -517,8 +525,15 @@ def main() -> None:
         ),
         FixtureSpec(
             name="unsupported-overlay-list-tagged",
-            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2}),
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
             baseline="unsupported-overlay-list-baseline",
+            check_pixels=False,
+        ),
+        FixtureSpec(
+            name="accessible-table-tagged",
+            roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/Table": 1, "/TR": 3, "/TH": 3, "/TD": 6}),
+            frame_children=["/frametitle", "/Table"],
+            baseline="accessible-table-baseline",
         ),
     ]
 

@@ -24,22 +24,46 @@ jobs:
         python -m pip install --upgrade pip
         pip install pypdf pillow numpy
 
-    - name: Install TeX Live and Poppler utilities
+    - name: Install system dependencies (Poppler utilities)
       run: |
         sudo apt-get update
-        sudo apt-get install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended poppler-utils
+        sudo apt-get install -y poppler-utils
 
-    - name: Run Test Suite and Accessibility Validation
+    - name: Set up TeX Live
+      uses: dante-ev/setup-texlive@v1
+      with:
+        version: '2025'
+        packages: |
+          scheme-full
+
+    - name: Compile Test Fixtures
       run: |
         mkdir -p build/tests
         python -c "
-        import os, subprocess, glob
+        import os, subprocess, glob, sys
         fixtures = sorted(glob.glob('tests/fixtures/*.tex'))
         for f in fixtures:
             doc = os.path.splitext(os.path.basename(f))[0]
             print(f'Compiling {doc}...')
-            subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], check=True, stdout=subprocess.DEVNULL)
-            subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], check=True, stdout=subprocess.DEVNULL)
+            res1 = subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], capture_output=True, text=True)
+            if res1.returncode != 0:
+                print(f'Error compiling {doc} (pass 1):\n', res1.stdout, file=sys.stderr)
+                sys.exit(res1.returncode)
+            res2 = subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], capture_output=True, text=True)
+            if res2.returncode != 0:
+                print(f'Error compiling {doc} (pass 2):\n', res2.stdout, file=sys.stderr)
+                sys.exit(res2.returncode)
         "
-        python tests/verify.py build/tests
-        python tests/verify_at.py build/tests
+
+    - name: Run Structural & Visual Regression Verification
+      run: python tests/verify.py build/tests
+
+    - name: Run Assistive Technology & Content Stream Coverage Validation
+      run: python tests/verify_at.py build/tests
+
+    - name: Upload Test Artifacts on Failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: build/tests/
