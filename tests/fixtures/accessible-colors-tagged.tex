@@ -1,6 +1,12 @@
 \documentclass[14pt,t,accessible-colors=true]{beamer-accessibility}
 \usetheme{Boadilla}
 \begin{document}
+\begingroup
+\usebeamercolor{block title alerted}
+\convertcolorspec{named}{fg}{rgb}\testfg
+\convertcolorspec{named}{bg}{rgb}\testbg
+\typeout{BA-ALERT-TITLE-FG=\testfg;BG=\testbg}
+\endgroup
 \begin{frame}{Accessible Colors Test}
 \begin{alertblock}{Notice}
 High-contrast alert information.

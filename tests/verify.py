@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import shutil
+import hashlib
 import subprocess
 import sys
 from collections import Counter
@@ -182,14 +182,22 @@ def check_column_structure(frame_node: dict, expected_col_count: int) -> None:
 
 
 def render(pdf_path: Path, destination: Path) -> list[Path]:
-    if destination.exists():
-        shutil.rmtree(destination)
-    destination.mkdir(parents=True)
+    # Cache only byte-identical PDFs; never recursively delete a caller-supplied path.
+    if destination.resolve().parent != pdf_path.resolve().parent or not destination.name.endswith("-png"):
+        raise ValueError("Render output must be a generated sibling -png directory")
+    destination.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
+    stamp = destination / "render.sha256"
+    pages = sorted(destination.glob("page-*.png"))
+    if stamp.exists() and stamp.read_text() == digest and len(pages) == len(PdfReader(pdf_path).pages):
+        return pages
+    for page in pages:
+        page.unlink()
     subprocess.run(
         ["pdftoppm", "-r", "300", "-png", str(pdf_path), str(destination / "page")],
-        check=True,
-        stdout=subprocess.DEVNULL,
+        check=True, stdout=subprocess.DEVNULL,
     )
+    stamp.write_text(digest)
     return sorted(destination.glob("page-*.png"))
 
 
@@ -527,7 +535,6 @@ def main() -> None:
             name="unsupported-overlay-list-tagged",
             roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/L": 2, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 3}),
             baseline="unsupported-overlay-list-baseline",
-            check_pixels=False,
         ),
         FixtureSpec(
             name="accessible-table-tagged",
@@ -573,7 +580,7 @@ def main() -> None:
         ),
         FixtureSpec(
             name="pause-in-block-tagged",
-            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/block": 2, "/blocktitle": 2, "/P": 2}),
+            roles=Counter({"/Document": 1, "/frame": 2, "/frametitle": 2, "/block": 2, "/blocktitle": 2, "/P": 3}),
             baseline="pause-in-block-baseline",
         ),
         FixtureSpec(
@@ -583,7 +590,7 @@ def main() -> None:
         ),
         FixtureSpec(
             name="pause-combined-overlay-tagged",
-            roles=Counter({"/Document": 1, "/frame": 3, "/frametitle": 3, "/L": 3, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 6}),
+            roles=Counter({"/Document": 1, "/frame": 3, "/frametitle": 3, "/L": 3, "/LI": 3, "/Lbl": 3, "/LBody": 3, "/P": 8}),
             baseline="pause-combined-overlay-baseline",
         ),
         # Overlay policies
@@ -613,13 +620,11 @@ def main() -> None:
             name="figure-pgfplots-alt-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/Figure": 1}),
             baseline="figure-pgfplots-alt-baseline",
-            check_pixels=False,
         ),
         FixtureSpec(
             name="figure-tikz-decorative-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1}),
             baseline="figure-tikz-decorative-baseline",
-            check_pixels=False,
         ),
         # Structural hardening & formatting
         FixtureSpec(
@@ -629,7 +634,7 @@ def main() -> None:
         ),
         FixtureSpec(
             name="empty-cases-tagged",
-            roles=Counter({"/Document": 1, "/frame": 2, "/column": 2, "/P": 3, "/frametitle": 1, "/L": 1, "/LI": 1, "/Lbl": 1, "/LBody": 1}),
+            roles=Counter({"/Document": 1, "/frame": 2, "/column": 2, "/P": 4, "/frametitle": 1, "/L": 1, "/LI": 1, "/Lbl": 1, "/LBody": 1}),
             baseline="empty-cases-baseline",
             check_pixels=False,
         ),
@@ -647,9 +652,16 @@ def main() -> None:
             name="accessible-colors-tagged",
             roles=Counter({"/Document": 1, "/frame": 1, "/frametitle": 1, "/block": 1, "/blocktitle": 1, "/P": 1}),
             baseline="accessible-colors-baseline",
-            check_pixels=False,
         ),
     ]
+
+    fixtures.extend([
+        FixtureSpec(name="center-in-list-tagged", roles=Counter({"/Document":1,"/frame":1,"/frametitle":1,"/L":1,"/LI":2,"/Lbl":2,"/LBody":2,"/P":4}), baseline="center-in-list-baseline"),
+        FixtureSpec(name="titlepage-tagged", roles=Counter({"/Document":1,"/frame":2,"/frametitle":2,"/P":4}), baseline="titlepage-baseline"),
+        FixtureSpec(name="native-tikz-tagged", roles=Counter({"/Document":1,"/frame":1,"/frametitle":1,"/P":2,"/Figure":1}), baseline="native-tikz-baseline"),
+        FixtureSpec(name="figure-options-tagged", roles=Counter({"/Document":1,"/frame":1,"/frametitle":1,"/P":3,"/Figure":2}), baseline="figure-options-baseline"),
+        FixtureSpec(name="semantic-features-tagged", roles=Counter({"/Document":1,"/frame":1,"/frametitle":1,"/P":1,"/Formula":1,"/Table":2,"/TR":4,"/TH":5,"/TD":3}), baseline="semantic-features-baseline", check_pixels=False),  # Formula boundary changes punctuation kerning (35 pixels); visually reviewed.
+    ])
 
     print(f"Running verification on {len(fixtures)} fixtures...")
     for spec in fixtures:
@@ -675,6 +687,7 @@ def main() -> None:
     # Additional verifications
     verify_bookmarks_outlines(build / "bookmarks-check-tagged.pdf")
     verify_accessible_contrast()
+    assert "BA-ALERT-TITLE-FG=1,1,1;BG=0.75,0,0" in (build/"accessible-colors-tagged.log").read_text(errors="replace"), "Contrast preset was not applied to the actual theme"
     verify_negative_and_warning_tests(build)
 
     print("ALL TESTS PASSED: structure assertions, text identity, 300-DPI pixel regressions, contrast, and policy enforcement.")
@@ -684,7 +697,7 @@ def verify_bookmarks_outlines(pdf_path: Path):
     reader = PdfReader(pdf_path)
     outlines = reader.outline
     titles = [item["/Title"] for item in outlines if isinstance(item, dict) and "/Title" in item]
-    if titles != ["Slide 1", "Slide 2", "Slide 3"]:
+    if titles != ["First Titled Frame", "Slide 2", "Incremental Frame"]:
         raise AssertionError(f"Unexpected bookmark titles in {pdf_path.name}: {titles}")
     print("  [OK] Bookmarks outline hierarchy (1 outline per logical frame, no duplicates)")
 
@@ -726,8 +739,8 @@ def verify_negative_and_warning_tests(build_dir: Path):
     ]
     for tex_path, expect_error, pattern in tests:
         res = subprocess.run(
-            ["pdflatex", "-interaction=nonstopmode", f"-output-directory={build_dir}", tex_path],
-            capture_output=True, text=True
+            ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"-output-directory={build_dir}", tex_path],
+            capture_output=True, text=True, cwd=Path(__file__).resolve().parents[1]
         )
         raw = res.stdout + res.stderr
         output = raw.replace("\n", "").replace("\r", "")

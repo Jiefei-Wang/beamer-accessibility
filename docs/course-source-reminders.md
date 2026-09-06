@@ -1,0 +1,62 @@
+# Course source reminders
+
+Latest read-only source scan on 2026-09-06. These are heuristic reminders;
+macro-generated content and layout-only tables require judgment. The course
+sources changed during the review; this list reflects the refreshed snapshot.
+
+- `biostat slides/common/obesity_histogram.tex:21` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 1/lecture 1.tex:50` [image-description]: Provide meaningful alt text for ch01-p0121-img02.jpeg.
+- `biostat slides/lecture 1/lecture 1.tex:309` [image-description]: Provide meaningful alt text for ch01-p0121-img02.jpeg.
+- `biostat slides/lecture 1/lecture 1.tex:85` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 1/lecture 1.tex:162` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 1/lecture 1.tex:379` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 1/lecture 1.tex:34` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 1/lecture 1.tex:52` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 2/lecture 2.tex:214` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:223` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:246` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:278` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:404` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:417` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 2/lecture 2.tex:33` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 2/lecture 2.tex:128` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 2/lecture 2.tex:136` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 3/lecture 3.tex:50` [image-description]: Provide meaningful alt text for ch02-p0128-img04.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:194` [image-description]: Provide meaningful alt text for ch02-p0135-img09.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:434` [image-description]: Provide meaningful alt text for ch02-p0148-img04.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:457` [image-description]: Provide meaningful alt text for ch02-p0148-img04.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:498` [image-description]: Provide meaningful alt text for ch02-p0153-img04.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:516` [image-description]: Provide meaningful alt text for ch02-p0155-img08.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:584` [image-description]: Provide meaningful alt text for ch02-p0165-img11.jpeg.
+- `biostat slides/lecture 3/lecture 3.tex:123` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:133` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:306` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:344` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:382` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:594` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 3/lecture 3.tex:34` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 3/lecture 3.tex:52` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:479` [image-description]: Provide meaningful alt text for ch02-p0165-img11.jpeg.
+- `biostat slides/lecture 4/lecture 4.tex:51` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:121` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:151` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:175` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:238` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:249` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:267` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:292` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:451` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:509` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:597` [table-semantics]: Review headers and migrate data cells to accessible table markup; mark layout-only material appropriately.
+- `biostat slides/lecture 4/lecture 4.tex:341` [diagram-description]: Provide a native TikZ alt option or an enclosing accessibleFigure description.
+- `biostat slides/lecture 4/lecture 4.tex:398` [diagram-description]: Provide a native TikZ alt option or an enclosing accessibleFigure description.
+- `biostat slides/lecture 4/lecture 4.tex:527` [diagram-description]: Provide a native TikZ alt option or an enclosing accessibleFigure description.
+- `biostat slides/lecture 4/lecture 4.tex:29` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:34` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:120` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:341` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:394` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:398` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:506` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:527` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.
+- `biostat slides/lecture 4/lecture 4.tex:595` [manual-legibility]: Inspect the rendered text size and contrast at normal viewing distance.

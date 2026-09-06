@@ -9,3 +9,5 @@
 *.vrb
 __pycache__/
 
+
+**/out/

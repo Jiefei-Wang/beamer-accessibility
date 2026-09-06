@@ -36,34 +36,12 @@ jobs:
         packages: |
           scheme-full
 
-    - name: Compile Test Fixtures
-      run: |
-        mkdir -p build/tests
-        python -c "
-        import os, subprocess, glob, sys
-        fixtures = sorted(glob.glob('tests/fixtures/*.tex'))
-        for f in fixtures:
-            doc = os.path.splitext(os.path.basename(f))[0]
-            print(f'Compiling {doc}...')
-            res1 = subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], capture_output=True, text=True)
-            if res1.returncode != 0:
-                print(f'Error compiling {doc} (pass 1):\n', res1.stdout, file=sys.stderr)
-                sys.exit(res1.returncode)
-            res2 = subprocess.run(['pdflatex', '-interaction=nonstopmode', '-halt-on-error', '-output-directory=build/tests', f], capture_output=True, text=True)
-            if res2.returncode != 0:
-                print(f'Error compiling {doc} (pass 2):\n', res2.stdout, file=sys.stderr)
-                sys.exit(res2.returncode)
-        "
-
-    - name: Run Structural & Visual Regression Verification
-      run: python tests/verify.py build/tests
-
-    - name: Run Assistive Technology & Content Stream Coverage Validation
-      run: python tests/verify_at.py build/tests
+    - name: Compile and validate fixtures
+      run: python tests/run_tests.py
 
     - name: Upload Test Artifacts on Failure
       if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: test-artifacts
-        path: build/tests/
+        path: tests/fixtures/out/

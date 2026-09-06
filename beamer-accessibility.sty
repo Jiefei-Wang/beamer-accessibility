@@ -15,6 +15,8 @@
 \bool_gset_false:N \g__ba_navsymbols_bool
 \bool_new:N \g__ba_colors_bool
 \bool_gset_false:N \g__ba_colors_bool
+\tl_new:N \g__ba_table_policy_tl
+\tl_gset:Nn \g__ba_table_policy_tl { warn }
 \tl_new:N \g__ba_overlay_policy_tl
 \tl_gset:Nn \g__ba_overlay_policy_tl { pages }
 
@@ -27,6 +29,12 @@
     mode / compat .code:n = { \bool_gset_false:N \g__ba_strict_bool },
     strict .code:n = { \bool_gset_true:N \g__ba_strict_bool },
     compat .code:n = { \bool_gset_false:N \g__ba_strict_bool },
+    table-policy .choice:,
+    table-policy / warn .code:n = { \tl_gset:Nn \g__ba_table_policy_tl { warn } },
+    table-policy / strict .code:n = { \tl_gset:Nn \g__ba_table_policy_tl { strict } },
+    navigation-symbols .choice:,
+    navigation-symbols / hidden .code:n = { \bool_gset_false:N \g__ba_navsymbols_bool },
+    navigation-symbols / shown .code:n = { \bool_gset_true:N \g__ba_navsymbols_bool },
     navsymbols .bool_gset:N = \g__ba_navsymbols_bool,
     navsymbols .initial:n = { false },
     accessible-colors .bool_gset:N = \g__ba_colors_bool,
@@ -60,9 +68,9 @@
          {\PackageError{beamer-accessibility}{\protect\pause\space detected in strict mode}{Use overlay-policy=pages or overlay-policy=handout.}}%
        \bool_if:NTF \g__ba_para_open_bool
          {
-           \tag_mc_end:
+           \ba_paragraph_end:
            \ba@orig@beamer@@pause[#1]%
-           \tag_mc_begin:n { }
+           \ba_paragraph_begin:
          }
          {
            \ba@orig@beamer@@pause[#1]%
@@ -101,18 +109,18 @@
       }
     \bool_if:NT \g__ba_colors_bool
       {
-        \setbeamercolor{block title alerted}{fg=white,bg=red!75!black}
-        \setbeamercolor{block body alerted}{fg=black,bg=red!10!white}
-        \setbeamercolor{author in head/foot}{fg=white,bg=blue!40!black}
-        \setbeamercolor{title in head/foot}{fg=white,bg=blue!30!black}
-        \setbeamercolor{date in head/foot}{fg=white,bg=blue!20!black}
-        \setbeamercolor{alerted text}{fg=red!60!black}
+        \setbeamercolor{block~title~alerted}{fg=white,bg=red!75!black}
+        \setbeamercolor{block~body~alerted}{fg=black,bg=red!10!white}
+        \setbeamercolor{author~in~head/foot}{fg=white,bg=blue!40!black}
+        \setbeamercolor{title~in~head/foot}{fg=white,bg=blue!30!black}
+        \setbeamercolor{date~in~head/foot}{fg=white,bg=blue!20!black}
+        \setbeamercolor{alerted~text}{fg=red!60!black}
       }
     \typeout{=============================================================}
     \typeout{beamer-accessibility:~Version~1.0~(2026/09/01)}
     \typeout{beamer-accessibility:~overlay-policy=\g__ba_overlay_policy_tl}
     \typeout{beamer-accessibility:~accessible-colors=\bool_if:NTF \g__ba_colors_bool {enabled}{disabled}}
-    \typeout{beamer-accessibility:~navigation~symbols=\bool_if:NTF \g__ba_navsymbols_bool {tagged}{hidden}}
+    \typeout{beamer-accessibility:~navigation~symbols=\bool_if:NTF \g__ba_navsymbols_bool {shown}{hidden}}
     \typeout{=============================================================}
   }
 
@@ -158,9 +166,7 @@
   {
     \bool_if:NTF \g__ba_body_active_bool
       {
-        \tag_struct_insert_annot:ee
-          { \pdfannot_link_ref_last: }
-          { \tag_struct_parent_int: }
+        #1
         \tag_mc_end:
         \tag_struct_end:
         \tag_mc_begin_pop:n {}
@@ -225,6 +231,7 @@
 \bool_new:N \g__ba_column_open_bool
 
 % Graphics structure state:
+\bool_new:N \g__ba_graphics_artifact_bool
 \bool_new:N \g__ba_graphics_struct_bool
 \bool_new:N \g__ba_graphics_decorative_bool
 \bool_new:N \g__ba_in_figure_bool
@@ -242,11 +249,7 @@
 \cs_new_protected:Npn \ba_body_begin:
   {
     \bool_gset_true:N \g__ba_body_active_bool
-    \bool_if:NF \g__ba_frame_bookmarked_bool
-      {
-        \pdfbookmark[1]{Slide ~ \int_use:N \g__ba_logical_frame_int}{ba@frame@\int_use:N \g__ba_logical_frame_int}
-        \bool_gset_true:N \g__ba_frame_bookmarked_bool
-      }
+
   }
 
 \cs_new_protected:Npn \ba_body_end:
@@ -385,9 +388,13 @@
 \cs_new_protected:Npn \ba_graphics_set_alt:n #1
   {
     \tl_gset:Nn \g__ba_graphics_alt_tl { #1 }
-    \bool_gset_false:N \g__ba_graphics_decorative_bool
   }
 
+\cs_new_protected:Npn \ba_graphics_set_decorative:n #1
+  { \str_case:nnF {#1}
+      { {true}{\bool_gset_true:N \g__ba_graphics_decorative_bool}
+        {false}{\bool_gset_false:N \g__ba_graphics_decorative_bool} }
+      {\PackageError{beamer-accessibility}{Invalid~decorative~value~'#1'}{Use~true~or~false.}} }
 \cs_new_protected:Npn \ba_graphics_set_decorative:
   {
     \bool_gset_true:N \g__ba_graphics_decorative_bool
@@ -404,7 +411,7 @@
   {
     \bool_if:NF \g__ba_graphics_decorative_bool
       {
-        \tl_if_empty:NT \g__ba_graphics_alt_tl
+        \tl_if_blank:VT \g__ba_graphics_alt_tl
           {
             \bool_if:NTF \g__ba_strict_bool
               {
@@ -420,6 +427,18 @@
       }
   }
 
+\cs_new_protected:Npn \ba_graphics_dispatch:nn #1#2
+  {
+    \bool_if:nTF {\g__ba_body_active_bool && !\g__ba_in_figure_bool}
+      {
+        \ba_graphics_clear:
+        \setkeys{Gin}{#1}
+        \ba_graphics_begin:n {#2}
+        \use:c {ba@orig@Gin@ii}[#1]{#2}
+        \ba_graphics_end:
+      }
+      {\use:c {ba@orig@Gin@ii}[#1]{#2}}
+  }
 \cs_new_protected:Npn \ba_graphics_begin:n #1
   {
     \int_compare:nNnT { \g__ba_para_suppress_int } > { 0 }
@@ -429,8 +448,10 @@
       {
         \bool_if:NT \g__ba_body_active_bool
           {
-            \bool_if:NTF \g__ba_graphics_decorative_bool
+            \bool_gset:Nn \g__ba_graphics_artifact_bool {\g__ba_graphics_decorative_bool || \int_compare_p:n {\use:c {beamer@coveringdepth} > 0}}
+            \bool_if:NTF \g__ba_graphics_artifact_bool
               {
+                \bool_if:NT \g__ba_para_open_bool {\tag_mc_end:}
                 \tag_mc_begin:n { artifact = layout }
               }
               {
@@ -454,9 +475,10 @@
 
 \cs_new_protected:Npn \ba_graphics_end:
   {
-    \bool_if:NTF \g__ba_graphics_decorative_bool
+    \bool_if:NTF \g__ba_graphics_artifact_bool
       {
         \tag_mc_end:
+        \bool_if:NT \g__ba_para_open_bool {\tag_mc_begin:n {}}
       }
       {
         \bool_if:NT \g__ba_graphics_struct_bool
@@ -496,15 +518,69 @@
    \bool_gset_true:N \g__ba_in_figure_bool
    \group_begin:\tl_clear:N \l__ba_fig_alt_tl\bool_set_false:N \l__ba_fig_decorative_bool
    \keys_set:nn { beamer-accessibility / figure } {#1}
+   \int_compare:nNnT {\use:c {beamer@coveringdepth}} > {0} {\bool_set_true:N \l__ba_fig_decorative_bool}
    \bool_if:NTF \l__ba_fig_decorative_bool
      {\tag_mc_begin:n {artifact=layout}}
-     {\tl_if_empty:NTF \l__ba_fig_alt_tl
-        {\ba_graphics_check_alt:n {figure}\tag_struct_begin:n {tag=Figure}\tag_mc_begin:n {}}
+     {\tl_if_blank:VTF \l__ba_fig_alt_tl
+        {\ba_graphics_clear:\ba_graphics_check_alt:n {figure}\tag_struct_begin:n {tag=Figure}\tag_mc_begin:n {}}
         {\tag_struct_begin:n {tag=Figure,alt={\l__ba_fig_alt_tl}}\tag_mc_begin:n {}}}}
-  {\tag_mc_end:\bool_if:NF \l__ba_fig_decorative_bool {\tag_struct_end:}\group_end:\bool_gset_false:N \g__ba_in_figure_bool}
+  {\mode_if_horizontal:T {\unskip}\tag_mc_end:\bool_if:NF \l__ba_fig_decorative_bool {\tag_struct_end:}\group_end:\bool_gset_false:N \g__ba_in_figure_bool\ignorespacesafterend}
 \RenewDocumentEnvironment{accessiblefigure}{ O{} }
   { \begin{accessibleFigure}[#1] }
   { \end{accessibleFigure} }
+
+
+% Native syntax used by the course's shared PGFPlots histogram.
+\bool_new:N \l__ba_tikz_wrapped_bool
+\bool_new:N \l__ba_tikz_open_bool
+\AddToHook{env/tikzpicture/before}{
+  \group_begin:
+  \bool_set_false:N \l__ba_tikz_wrapped_bool
+  \bool_if:NT \g__ba_body_active_bool
+    {\bool_if:NF \g__ba_in_figure_bool
+      {\ba_paragraph_end:
+       \bool_set_true:N \l__ba_tikz_wrapped_bool
+       \bool_set_true:N \g__ba_in_figure_bool}}
+}
+\AddToHook{env/tikzpicture/after}{\group_end:}
+\cs_new_protected:Npn \ba_tikz_begin:
+  {
+    \bool_set_false:N \l__ba_tikz_open_bool
+    \bool_if:NT \l__ba_tikz_wrapped_bool
+      {
+        \bool_set_false:N \l__ba_tikz_wrapped_bool
+        \bool_set_true:N \l__ba_tikz_open_bool
+        \int_compare:nNnT {\use:c {beamer@coveringdepth}} > {0} {\bool_set_true:N \l__ba_fig_decorative_bool}
+        \bool_if:NTF \l__ba_fig_decorative_bool
+          {\tag_mc_begin:n {artifact=layout}}
+          {
+            \tl_if_blank:VT \l__ba_fig_alt_tl
+              {\ba_graphics_clear:\ba_graphics_check_alt:n {tikzpicture}}
+            \tag_struct_begin:n {tag=Figure,alt={\l__ba_fig_alt_tl}}
+            \tag_mc_begin:n {}
+          }
+      }
+  }
+\cs_new_protected:Npn \ba_tikz_end:
+  {
+    \bool_if:NT \l__ba_tikz_open_bool
+      {
+        \tag_mc_end:
+        \bool_if:NF \l__ba_fig_decorative_bool {\tag_struct_end:}
+      }
+  }
+\AddToHook{package/tikz/after}{
+  \tikzset{
+    alt/.code={\tl_set:Nn \l__ba_fig_alt_tl {#1}},
+    alttext/.code={\tl_set:Nn \l__ba_fig_alt_tl {#1}},
+    decorative/.code={\bool_set:Nn \l__ba_fig_decorative_bool {#1}},
+    decorative/.default=true,
+    every~picture/.append~style={
+      execute~at~begin~picture={\ba_tikz_begin:},
+      execute~at~end~picture={\ba_tikz_end:}
+    }
+  }
+}
 
 \keys_define:nn { beamer-accessibility / table }
   {
@@ -519,19 +595,31 @@
     artifact .bool_set:N = \l__ba_tbl_dec_bool,
   }
 
+\int_new:N \g__ba_table_id_int
+\int_new:N \g__ba_table_col_int
+\tl_new:N \l__ba_table_attributes_tl
 \cs_new_protected:Npn \ba_table_begin:n #1
   {
     \ba_paragraph_end:
     \bool_gset_true:N \g__ba_in_table_bool
+    \int_gincr:N \g__ba_table_id_int
+    \tl_clear:N \l__ba_table_attributes_tl
+    \tl_if_blank:VF \l__ba_tbl_summary_tl
+      {
+        \exp_args:NNV \str_set_convert:Nnnn \l_tmpa_str \l__ba_tbl_summary_tl {default}{utf16/hex}
+        \tl_set:Ne \l__ba_table_attributes_tl {ba-summary-\int_use:N \g__ba_table_id_int}
+        \tag_attr_new:ee {\l__ba_table_attributes_tl} {/O /Table /Summary <\l_tmpa_str>}
+      }
     \tl_if_empty:nTF { #1 }
       {
-        \tag_struct_begin:n { tag = Table }
+        \tag_struct_begin:n { tag = Table, attribute={\l__ba_table_attributes_tl} }
       }
       {
-        \tag_struct_begin:n { tag = Table, alt = {#1} }
+        \tag_struct_begin:n { tag = Table, title-o = {#1}, attribute={\l__ba_table_attributes_tl} }
       }
     \bool_gset_true:N \g__ba_table_open_bool
     \bool_gset_false:N \g__ba_tr_open_bool
+    \int_gzero:N \g__ba_table_row_int
   }
 
 \cs_new_protected:Npn \ba_table_end:
@@ -549,6 +637,8 @@
   {
     \bool_if:NF \g__ba_tr_open_bool
       {
+        \int_gincr:N \g__ba_table_row_int
+        \int_gzero:N \g__ba_table_col_int
         \tag_struct_begin:n { tag = TR }
         \bool_gset_true:N \g__ba_tr_open_bool
       }
@@ -563,27 +653,55 @@
       }
   }
 
-\NewDocumentCommand{\tablerowbegin}{} { \ba_tr_begin: \ignorespaces }
-\NewDocumentCommand{\tablerowend}{} { \ba_tr_end: \ignorespaces }
+\NewDocumentCommand{\tablerowbegin}{} {\bool_if:NF \g__ba_table_dec_bool {\ba_tr_begin:}\ignorespaces}
+\NewDocumentCommand{\tablerowend}{} { \unskip\ba_tr_end: \ignorespaces }
 
-\NewDocumentCommand{\tablehead}{m}
+\int_new:N \g__ba_table_row_int
+\tagpdfsetup{
+  role/new-attribute = {ba-col-header}{/O /Table /Scope /Column},
+  role/new-attribute = {ba-row-header}{/O /Table /Scope /Row}
+}
+\NewDocumentCommand{\tablehead}{ O{auto} m }
+  {\bool_if:NTF \g__ba_table_dec_bool {#2}{\ba_tablehead:nn {#1}{#2}}}
+\cs_new_protected:Npn \ba_tablehead:nn #1#2
   {
     \ba_tr_begin:
-    \tag_struct_begin:n { tag = TH }
+    \int_gincr:N \g__ba_table_col_int
+    \str_case:nnF {#1}
+      {
+        {row}{\tag_struct_begin:n {tag=TH,attribute=ba-row-header}}
+        {column}{\tag_struct_begin:n {tag=TH,attribute=ba-col-header}}
+        {auto}{
+          \int_compare:nNnTF {\g__ba_table_row_int} > {\l__ba_tbl_hdr_rows_int}
+            {\tag_struct_begin:n {tag=TH,attribute=ba-row-header}}
+            {\tag_struct_begin:n {tag=TH,attribute=ba-col-header}}
+        }
+      }
+      {\PackageError{beamer-accessibility}{Invalid~table~header~scope~'#1'}{Use~auto,~row,~or~column.}}
     \tag_mc_begin:n { }
-    #1
+    #2
     \tag_mc_end:
     \tag_struct_end:
   }
 
 \NewDocumentCommand{\tablecell}{m}
+  {\bool_if:NTF \g__ba_table_dec_bool {#1}{\ba_tablecell:n {#1}}}
+\cs_new_protected:Npn \ba_tablecell:n #1
   {
     \ba_tr_begin:
-    \tag_struct_begin:n { tag = TD }
-    \tag_mc_begin:n { }
-    #1
-    \tag_mc_end:
-    \tag_struct_end:
+    \bool_if:nTF {
+      \int_compare_p:n {\g__ba_table_row_int <= \l__ba_tbl_hdr_rows_int}
+      || (\l__ba_tbl_first_col_hdr_bool && \int_compare_p:n {\g__ba_table_col_int = 0})
+    }
+      {\tablehead{#1}}
+      {
+        \int_gincr:N \g__ba_table_col_int
+        \tag_struct_begin:n {tag=TD}
+        \tag_mc_begin:n {}
+        #1
+        \tag_mc_end:
+        \tag_struct_end:
+      }
   }
 
 \NewDocumentEnvironment{accessibletabular}{ O{} m }
@@ -602,7 +720,8 @@
 \NewDocumentEnvironment{accessibleTable}{ O{} }
   {
     \ba_paragraph_end:
-    \keys_set:nn { beamer-accessibility / table } { #1 }
+    \keys_set:nn { beamer-accessibility / table }
+      {header-rows=1,first-column-headers=false,title={},summary={},decorative=false,#1}
     \tl_gset_eq:NN \g__ba_table_title_tl \l__ba_tbl_title_tl
     \bool_gset_eq:NN \g__ba_table_dec_bool \l__ba_tbl_dec_bool
     \bool_gset_true:N \g__ba_in_accessibletable_bool
@@ -669,7 +788,7 @@
       {
         \bool_if:NF \g__ba_in_table_bool
           {
-            \bool_if:NTF \g__ba_strict_bool
+            \bool_if:nTF { \g__ba_strict_bool || \str_if_eq_p:Vn \g__ba_table_policy_tl {strict} }
               {
                 \PackageError{beamer-accessibility}
                   {Unannotated~tabular~detected~in~slide~body}
@@ -794,6 +913,11 @@
 \cs_new_protected:Npn \ba_frame_end:
   {
     \ba_body_end:
+    \bool_if:NF \g__ba_frame_bookmarked_bool
+      {
+        \pdfbookmark[1]{Slide ~ \int_use:N \g__ba_logical_frame_int}{ba@frame@\int_use:N \g__ba_logical_frame_int}
+        \bool_gset_true:N \g__ba_frame_bookmarked_bool
+      }
     \ba_list_close_all:
     \ba_column_end:
     \bool_if:NT \g__ba_block_open_bool
@@ -827,12 +951,29 @@
         \bool_gset_false:N \g__ba_in_title_bool
         \bool_if:NF \g__ba_frame_bookmarked_bool
           {
-            \tl_set:Nx \l_tmpa_tl { \insertframetitle }
+            \tl_set:No \l_tmpa_tl { \insertframetitle }
             \tl_if_empty:NTF \l_tmpa_tl
               { \pdfbookmark[1]{Slide ~ \int_use:N \g__ba_logical_frame_int}{ba@frame@\int_use:N \g__ba_logical_frame_int} }
               { \pdfbookmark[1]{\insertframetitle}{ba@frame@\int_use:N \g__ba_logical_frame_int} }
             \bool_gset_true:N \g__ba_frame_bookmarked_bool
           }
+      }
+  }
+
+\cs_new_protected:Npn \ba_document_title_begin:
+  {
+    \bool_if:NT \g__ba_body_active_bool
+      {\ba_paragraph_end:\ba_frametitle_begin:}
+  }
+\cs_new_protected:Npn \ba_document_title_end:
+  {
+    \bool_if:NT \g__ba_body_active_bool
+      {
+        \tag_mc_end:\tag_struct_end:
+        \bool_gset_false:N \g__ba_in_title_bool
+        \bool_if:NF \g__ba_frame_bookmarked_bool
+          {\pdfbookmark[1]{\inserttitle}{ba@frame@\int_use:N \g__ba_logical_frame_int}
+           \bool_gset_true:N \g__ba_frame_bookmarked_bool}
       }
   }
 
@@ -949,6 +1090,34 @@
       }
   }
 
+% Formula alternative text is author supplied; TeX source is not speech.
+\NewDocumentCommand \AccessibleMath {m m}
+  {
+    \mode_leave_vertical:
+    \tag_mc_end_push:
+    \tl_if_blank:nT {#1}
+      {\PackageError{beamer-accessibility}{Formula~alternative~text~is~empty}{Provide~a~spoken~description.}}
+    \tag_struct_begin:n {tag=Formula,alt={#1}}
+    \tag_mc_begin:n {}
+    #2
+    \tag_mc_end:
+    \tag_struct_end:
+    \tag_mc_begin_pop:n {}
+  }
+
+% Trivlist-based alignment environments inside semantic list items reset
+% everypar after the paragraph hook has seen @inlabel. Run once after that reset.
+\cs_new_protected:Npn \ba_alignment_everypar:
+  {
+    \bool_if:nF {\g__ba_para_open_bool || \g__ba_para_artifact_bool}
+      {\ba_paragraph_begin:}
+  }
+\cs_new_protected:Npn \ba_alignment_setup:
+  {\everypar\expandafter{\the\everypar\ba_alignment_everypar:}}
+\AddToHook{cmd/center/after}{\ba_alignment_setup:}
+\AddToHook{cmd/flushleft/after}{\ba_alignment_setup:}
+\AddToHook{cmd/flushright/after}{\ba_alignment_setup:}
+
 % Public experimental commands
 \NewDocumentCommand \BeamerAccessibilityFrameBegin { } { \ba_frame_begin: }
 \NewDocumentCommand \BeamerAccessibilityFrameEnd { } { \ba_frame_end: }
@@ -1008,6 +1177,7 @@
   \addtobeamertemplate{enumerate subitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
   \addtobeamertemplate{enumerate subsubitem}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
   \addtobeamertemplate{description item}{\csname ba_item_lbl_begin:\endcsname}{\csname ba_item_lbl_end:\endcsname}%
+  \addtobeamertemplate{title}{\csname ba_document_title_begin:\endcsname}{\csname ba_document_title_end:\endcsname}%
   \addtobeamertemplate{frametitle}{\csname ba_frametitle_begin:\endcsname}{\csname ba_frametitle_end:\endcsname}%
   \addtobeamertemplate{block begin}{\csname ba_block_begin:\endcsname}{\csname ba_block_body_begin:\endcsname}%
   \addtobeamertemplate{block end}{}{\csname ba_block_end:\endcsname}%
@@ -1038,16 +1208,13 @@
 % Graphics alt text and structural tagging:
 \define@key{Gin}{alt}{\csname ba_graphics_set_alt:n\endcsname{#1}}
 \define@key{Gin}{alttext}{\csname ba_graphics_set_alt:n\endcsname{#1}}
-\define@key{Gin}{decorative}[true]{\csname ba_graphics_set_decorative:\endcsname}
-\define@key{Gin}{artifact}[true]{\csname ba_graphics_set_decorative:\endcsname}
+\define@key{Gin}{decorative}[true]{\csname ba_graphics_set_decorative:n\endcsname{#1}}
+\define@key{Gin}{artifact}[true]{\csname ba_graphics_set_decorative:n\endcsname{#1}}
 
 \let\ba@orig@Gin@ii\Gin@ii
 \def\Gin@ii[#1]#2{%
   \begingroup
-  \setkeys{Gin}{#1}%
-  \csname ba_graphics_begin:n\endcsname{#2}%
-  \ba@orig@Gin@ii[#1]{#2}%
-  \csname ba_graphics_end:\endcsname
+  \csname ba_graphics_dispatch:nn\endcsname{#1}{#2}%
   \endgroup
 }
 
@@ -1113,6 +1280,7 @@
         \rule\z@\footnotesep\ignorespaces#1\@finalstrut\strutbox}}%
     \color@endgroup
     \csname ba_paragraph_end:\endcsname}%
+  \csname ba_paragraph_begin:\endcsname
 }
 \let\@footnotetext=\beamer@framefootnotetext
 \let\ba@orig@mpfootnotetext\@mpfootnotetext
@@ -1130,6 +1298,7 @@
         \rule\z@\footnotesep\ignorespaces#1\@finalstrut\strutbox}}%
     \color@endgroup
     \csname ba_paragraph_end:\endcsname}%
+  \csname ba_paragraph_begin:\endcsname
 }
 
 \makeatother

@@ -1,0 +1,23 @@
+\documentclass[14pt,t,table-policy=strict]{beamer-accessibility}
+\usepackage{booktabs}
+\title{Accessible statistical notation and tables}
+\begin{document}
+\begin{frame}{Mean ($\bar{x}$) and data}
+The mean is \AccessibleMath{the sum of x sub i divided by n}{$\bar{x}=\frac{1}{n}\sum_i x_i$}.
+\begin{accessibleTable}[title={Measurements},summary={Groups and sample sizes},first-column-headers=true]
+\begin{accessibletabular}{lr}
+\toprule
+\tablecell{Group} & \tablecell{Size} \tablerowend \\
+\midrule
+\tablecell{Control} & \tablecell{15} \tablerowend \\
+\bottomrule
+\end{accessibletabular}
+\end{accessibleTable}
+\begin{accessibleTable}
+\begin{accessibletabular}{lr}
+\tablehead{Variable} & \tablehead{Value} \tablerowend \\
+\tablecell{Age} & \tablecell{40} \tablerowend \\
+\end{accessibletabular}
+\end{accessibleTable}
+\end{frame}
+\end{document}

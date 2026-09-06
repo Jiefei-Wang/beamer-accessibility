@@ -1,3 +1,19 @@
+# Unreleased: course accessibility audit (2026-09-06)
+
+- Fix mathematical-title crashes, meaningful bookmarks, and title-page headings.
+- Keep hidden prose and figure alternatives out of unrevealed overlay pages.
+- Support native TikZ/PGFPlots descriptions without duplicate figure tags.
+- Fix decorative options, blank descriptions, composite images, and spacing.
+- Add header scope, table option resets, working titles and summaries.
+- Add spoken inline Formula alternatives and fix post-footnote punctuation.
+- Fix contrast preset color-name tokenization; test the actual applied colors.
+- Strengthen metadata, ParentTree, Form, annotation, and negative controls.
+- Unify local/CI runners; use adjacent out folders and safe render caching.
+- Correct documentation and record outstanding course-author requirements.
+
+Older release claims below are historical. The README and validation record
+define the current contract; automated tests do not certify accessibility.
+
 # Changelog
 
 ## 1.0 — 2026-09-01

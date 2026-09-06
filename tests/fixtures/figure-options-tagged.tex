@@ -1,0 +1,15 @@
+\documentclass[14pt,t]{beamer-accessibility}
+\title{Figure option regression}
+\begin{document}
+\begin{frame}{Figure option semantics}
+Before \includegraphics[decorative=true,width=0.6cm]{example-image} after.
+
+\includegraphics[decorative=false,alt={Meaningful image},width=1cm]{example-image}
+
+\begin{accessibleFigure}[alt={A composite figure with one image}]
+\includegraphics[width=1cm]{example-image}
+\end{accessibleFigure}
+
+Text after composite.
+\end{frame}
+\end{document}

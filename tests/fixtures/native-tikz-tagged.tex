@@ -1,0 +1,18 @@
+\documentclass[14pt,t]{beamer-accessibility}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\title{Native TikZ accessibility regression}
+\begin{document}
+\begin{frame}{Native plot description}
+Before the plot.
+\begin{center}
+\begin{tikzpicture}[alt={Bar heights are two and three.}]
+\begin{axis}[width=5cm,height=3cm,ybar]
+\addplot coordinates {(1,2) (2,3)};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+After the plot.
+\end{frame}
+\end{document}
