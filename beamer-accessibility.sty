@@ -16,6 +16,12 @@
 \RequirePackage{tagpdf}
 
 \ExplSyntaxOn
+% Ensure tagsupport sockets required by tagpdf's \AtBeginDocument hooks are declared
+\socket_if_exist:nF { tagsupport/parbox/before }
+  { \NewSocket { tagsupport/parbox/before } { 0 } }
+\socket_if_exist:nF { tagsupport/parbox/after }
+  { \NewSocket { tagsupport/parbox/after } { 0 } }
+
 \tl_new:N \g__ba_lang_tl
 \tl_gset:Nn \g__ba_lang_tl { en-US }
 \bool_new:N \g__ba_strict_bool
