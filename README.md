@@ -65,10 +65,13 @@ See the [requirements and course audit](docs/university-accessibility.md).
 ```powershell
 git clone https://github.com/Jiefei-Wang/beamer-accessibility.git
 cd beamer-accessibility
+# For MiKTeX:
 .\scripts\install-miktex.ps1
+# For TeX Live:
+.\scripts\install-texlive.ps1
 ```
 
-The installer updates the user MiKTeX tree. It is not needed to run tests from this
+The installer updates the user MiKTeX or TeX Live tree. It is not needed to run tests from this
 repository. Compile with outputs in an adjacent `out` directory, for example:
 
 ```powershell

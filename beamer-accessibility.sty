@@ -1,6 +1,15 @@
 \NeedsTeXFormat{LaTeX2e}[2025-06-01]
 \ProvidesPackage{beamer-accessibility}[2026/09/01 v1.0 Accessible Beamer presentations with semantic PDF tagging]
 
+\RequirePackage{iftex}
+\ifxetex
+  \PackageError{beamer-accessibility}
+    {XeLaTeX is not supported for tagged PDF presentations}
+    {beamer-accessibility relies on direct PDF management and tagpdf structures that^^J%
+     are not supported by the XeTeX/xdvipdfmx backend.^^J%
+     Please compile using pdflatex (recommended) or lualatex.}
+\fi
+
 % PDF management must have been selected before the class. The companion
 % wrapper does this, or a package-only user can place
 % \RequirePackage{pdfmanagement} before \documentclass{beamer}.
