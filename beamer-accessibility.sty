@@ -617,12 +617,9 @@
       {
         \exp_args:NNV \str_set_convert:Nnnn \l_tmpa_str \l__ba_tbl_summary_tl {default}{utf16/hex}
         \tl_set:Ne \l__ba_table_attributes_tl {ba-summary-\int_use:N \g__ba_table_id_int}
-        \cs_if_exist:NTF \tag_attr_new:ee
+        \exp_args:Ne \tagpdfsetup
           {
-            \tag_attr_new:ee {\l__ba_table_attributes_tl} {/O /Table /Summary <\l_tmpa_str>}
-          }
-          {
-            \exp_args:Nee \tag_attr_new:nn {\l__ba_table_attributes_tl} {/O /Table /Summary <\l_tmpa_str>}
+            role/new-attribute = {\l__ba_table_attributes_tl}{/O /Table /Summary <\l_tmpa_str>}
           }
       }
     \tl_if_empty:nTF { #1 }
